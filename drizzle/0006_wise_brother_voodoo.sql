@@ -1,0 +1,1 @@
+ALTER TABLE `person_profile` ADD `is_pwd_representative` integer;

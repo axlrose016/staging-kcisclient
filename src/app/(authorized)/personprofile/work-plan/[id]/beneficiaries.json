@@ -1,0 +1,82 @@
+[
+    {
+        "id": "b9e2fa4d-671e-4379-a2ab-dcead75bd243",
+        "full_name": "Alicia M. Reyes",
+        "course_name": "Bachelor of Science in Information Technology",
+        "school_name": "University of the Philippines Diliman",
+        "status_name": "Available",
+        "is_selected": "false"
+    },
+    {
+        "id": "3b40c08d-9ad0-4ad4-a6f5-2db03cbfd7e7",
+        "full_name": "Mark D. Santos",
+        "course_name": "Bachelor of Science in Civil Engineering",
+        "school_name": "Mapúa University",
+        "status_name": "Engineering Office",
+        "is_selected": "false"
+    },
+    {
+        "id": "6fc6b19c-cf4e-4b54-b14b-9c973de6487e",
+        "full_name": "Jenny L. Lao",
+        "course_name": "Bachelor of Science in Nursing",
+        "school_name": "Far Eastern University",
+        "status_name": "Available",
+        "is_selected": "false"
+    },
+    {
+        "id": "51b6a41b-c4a0-4a67-b127-0402fdac5e7b",
+        "full_name": "Carlos B. Dizon Jr.",
+        "course_name": "Bachelor of Science in Accountancy",
+        "school_name": "De La Salle University",
+        "status_name": "Accounting Office",
+        "is_selected": "false"
+    },
+    {
+        "id": "4cbdb7a1-45d7-4a32-94f8-c59a255fd30d",
+        "full_name": "Mina T. Navarro",
+        "course_name": "Bachelor of Arts in Political Science",
+        "school_name": "Ateneo de Manila University",
+        "status_name": "Available",
+        "is_selected": "false"
+    },
+    {
+        "id": "37a324fc-b44a-40b5-a733-4c3c285e0b27",
+        "full_name": "Joseph E. Aquino",
+        "course_name": "Bachelor of Secondary Education",
+        "school_name": "Philippine Normal University",
+        "status_name": "Office of the Mayor",
+        "is_selected": "false"
+    },
+    {
+        "id": "d09ea57c-52e9-4b69-a04f-c507f4b0f312",
+        "full_name": "Lara G. Mendoza",
+        "course_name": "Bachelor of Science in Business Administration",
+        "school_name": "University of Santo Tomas",
+        "status_name": "Available",
+        "is_selected": "false"
+    },
+    {
+        "id": "0cfeab01-9187-4db5-88c2-4df6cde2a5f0",
+        "full_name": "Rey F. Abad",
+        "course_name": "Bachelor of Science in Mechanical Engineering",
+        "school_name": "Technological Institute of the Philippines",
+        "status_name": "City Maintenance Office",
+        "is_selected": "false"
+    },
+    {
+        "id": "c45f6365-4d87-4412-93e2-5ed6fd984bfc",
+        "full_name": "Nina C. Cruz",
+        "course_name": "Bachelor of Science in Psychology",
+        "school_name": "Pamantasan ng Lungsod ng Maynila",
+        "status_name": "Available",
+        "is_selected": "false"
+    },
+    {
+        "id": "ca8e2c55-390c-4909-91e0-41350cf05593",
+        "full_name": "Miguel R. De Vera III",
+        "course_name": "Bachelor of Science in Computer Science",
+        "school_name": "Adamson University",
+        "status_name": "IT Department",
+        "is_selected": "false"
+    }
+]

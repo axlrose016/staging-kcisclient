@@ -1,0 +1,1 @@
+self.fallback=async a=>{let{destination:e,url:l}=a,c={document:"/~offline",image:"/fallback.webp",audio:"/fallback.mp3",video:"/fallback.mp4",font:"/fallback-font.woff2"}[e];return c?caches.match(c,{ignoreSearch:!0}):""===e&&l.match(/\/_next\/data\/.+\/.+\.json$/i)?caches.match("/_next/data/lNxMqZwQ-Xg5FiElmPAlZ/fallback.json",{ignoreSearch:!0}):Response.error()};
