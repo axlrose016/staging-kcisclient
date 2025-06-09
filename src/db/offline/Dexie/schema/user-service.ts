@@ -160,25 +160,25 @@ const saltObj = {
 const saltArray = new Uint8Array(Object.values(saltObj));
 
 export const seedUser: IUser[] = [
-    // {
-    //     "id": "e9840dec-f388-418c-b5c9-c5cf295df9d7",
-    //     "username": "kcadmin123",
-    //     "email": "kcadmin@gmail.com",
-    //     "password": "Svk7OMYHydnYeJIlCzG9MnhlBb7SSQ7c1E3zvx4KWsM=",
-    //     "salt": Array.from(saltArray),
-    //     "role_id": "d4003a01-36c6-47af-aae5-13d3f04e110f",
-    //     "level_id": 0,
-    //     "created_date": "2025-03-11T06:18:58.077Z",
-    //     "created_by": "e9840dec-f388-418c-b5c9-c5cf295df9d7",
-    //     "last_modified_date": "",
-    //     "last_modified_by": "",
-    //     "push_status_id": 2,
-    //     "push_date": "",
-    //     "deleted_date": "",
-    //     "deleted_by": "",
-    //     "is_deleted": false,
-    //     "remarks": ""
-    // },
+    {
+        "id": "e9840dec-f388-418c-b5c9-c5cf295df9d7",
+        "username": "kcadmin123",
+        "email": "kcadmin@gmail.com",
+        "password": "Svk7OMYHydnYeJIlCzG9MnhlBb7SSQ7c1E3zvx4KWsM=",
+        "salt": Array.from(saltArray),
+        "role_id": "d4003a01-36c6-47af-aae5-13d3f04e110f",
+        "level_id": 0,
+        "created_date": "2025-03-11T06:18:58.077Z",
+        "created_by": "e9840dec-f388-418c-b5c9-c5cf295df9d7",
+        "last_modified_date": "",
+        "last_modified_by": "",
+        "push_status_id": 2,
+        "push_date": "",
+        "deleted_date": "",
+        "deleted_by": "",
+        "is_deleted": false,
+        "remarks": ""
+    },
     {
         "id": "17eb1f81-83d3-4642-843d-24ba3e40f45c",
         "username": "finance123",
