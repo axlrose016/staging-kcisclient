@@ -115,13 +115,34 @@ export function AppChart({ config }: AppChartProps) {
             return <div className="flex items-center justify-center h-full">No data available</div>;
         }
 
+        const dt = (data || []).reduce((acc: any[], item: any) => {
+            const existingItem = acc.find(x => x[xAxisKey] === item[xAxisKey]);
+            if (existingItem) {
+                // Sum up the values for each dataKey
+                dataKeys.forEach((key: string) => {
+                    existingItem[key] = (parseFloat(existingItem[key]) || 0) + (parseFloat(item[key]) || 0);
+                });
+            } else {
+                // Create new entry with summed values
+                const newItem: Record<string, any> = {
+                    [xAxisKey]: item[xAxisKey],
+                    name: item[xAxisKey]
+                };
+                dataKeys.forEach((key: string) => {
+                    newItem[key] = parseFloat(item[key]) || 0;
+                });
+                acc.push(newItem);
+            }
+            return acc;
+        }, []);
+
         const legendProps = showLegend ? {
             layout: legendPosition === 'left' || legendPosition === 'right' ? 'vertical' : 'horizontal',
             align: legendPosition === 'right' ? 'right' : legendPosition === 'left' ? 'left' : 'center',
             verticalAlign: legendPosition === 'bottom' ? 'bottom' : legendPosition === 'top' ? 'top' : 'middle'
-        } : undefined;
+        } as const : undefined;
 
-        const totalValue = data.reduce((sum, item) => sum + (item[dataKeys[0]] || 0), 0);
+        const totalValue = dt.reduce((sum, item) => sum + (item[dataKeys[0]] || 0), 0);
 
         switch (type) {
             case 'radial':
@@ -189,7 +210,7 @@ export function AppChart({ config }: AppChartProps) {
                         {orientation === "horizontal" ? (
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart
-                                    data={data}
+                                    data={dt}
                                     layout="horizontal"
                                     margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
                                 >
@@ -212,7 +233,7 @@ export function AppChart({ config }: AppChartProps) {
                         ) : (
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart
-                                    data={data}
+                                    data={dt}
                                     layout="vertical"
                                     margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
                                 >
@@ -254,7 +275,7 @@ export function AppChart({ config }: AppChartProps) {
                 return (
                     <ResponsiveContainer width="100%" height="100%">
                         <LineChart
-                            data={data}
+                            data={dt}
                             margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
                         >
                             {showGrid && <CartesianGrid strokeDasharray="3 3" />}
@@ -282,7 +303,7 @@ export function AppChart({ config }: AppChartProps) {
                 return (
                     <ResponsiveContainer width="100%" height="100%">
                         <AreaChart
-                            data={data}
+                            data={dt}
                             margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
                         >
                             {showGrid && <CartesianGrid strokeDasharray="3 3" />}
@@ -314,7 +335,7 @@ export function AppChart({ config }: AppChartProps) {
                                 <Pie
                                     activeIndex={activeIndex}
                                     activeShape={renderActiveShape}
-                                    data={data}
+                                    data={dt}
                                     cx="50%"
                                     cy="50%"
                                     innerRadius={0}
@@ -328,7 +349,7 @@ export function AppChart({ config }: AppChartProps) {
                                 </Pie>
                             ) : (
                                 <Pie
-                                    data={data}
+                                    data={dt}
                                     cx="50%"
                                     cy="50%"
                                     labelLine={true}
@@ -356,7 +377,7 @@ export function AppChart({ config }: AppChartProps) {
                                 <Pie
                                     activeIndex={activeIndex}
                                     activeShape={renderActiveShape}
-                                    data={data}
+                                    data={dt}
                                     cx="50%"
                                     cy="50%"
                                     innerRadius={60}
@@ -364,13 +385,13 @@ export function AppChart({ config }: AppChartProps) {
                                     dataKey={donutDataKey}
                                     onMouseEnter={onPieEnter}
                                 >
-                                    {data.map((entry, index) => (
+                                    {dt.map((entry, index) => (
                                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                     ))}
                                 </Pie>
                             ) : (
                                 <Pie
-                                    data={data}
+                                    data={dt}
                                     cx="50%"
                                     cy="50%"
                                     innerRadius={60}
@@ -378,7 +399,7 @@ export function AppChart({ config }: AppChartProps) {
                                     dataKey={donutDataKey}
                                     label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                                 >
-                                    {data.map((entry, index) => (
+                                    {dt.map((entry, index) => (
                                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                     ))}
                                 </Pie>
@@ -405,7 +426,7 @@ export function AppChart({ config }: AppChartProps) {
                             {showLegend && <Legend {...legendProps} />}
                             <Scatter
                                 name={`${xKey} vs ${yKey}`}
-                                data={data}
+                                data={dt}
                                 fill={COLORS[0]}
                             />
                         </ScatterChart>

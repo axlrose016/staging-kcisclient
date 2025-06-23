@@ -12,6 +12,10 @@ import { AppTable } from '@/components/app-table';
 import { SessionPayload } from '@/types/globals';
 import { getSession } from '@/lib/sessions-client';
 import { dexieDb } from '@/db/offline/Dexie/databases/dexieDb';
+import { ARService } from './service';
+import { toast } from '@/hooks/use-toast';
+import Image from 'next/image';
+import { libDb } from '@/db/offline/Dexie/databases/libraryDb';
 
 
 
@@ -74,9 +78,9 @@ const columns = [
 
 export default function AccomplishmentReport() {
 
-    const router = useRouter();
-    const [date, setDate] = React.useState<Date>(new Date())
-
+    const service = new ARService();
+    const router = useRouter(); 
+    const [session, setSession] = useState<SessionPayload>();
     const [data, setData] = useState<any[]>([]);
 
     const getUsers = async () => {
@@ -85,40 +89,81 @@ export default function AccomplishmentReport() {
         console.log('getUsers > results', results)
         const merged = await Promise.all(
             results.map(async (a) => {
-                const b = await dexieDb.lib_school_profiles.where("id").equals(a.school_id!).first()
+                const b = await libDb.lib_school_profiles.where("id").equals(a.school_id!).first()
                 if (b) {
                     return {
                         ...b,    // fields from tableB (same `id`)
                         ...a   // fields from tableA
                     };
                 }
-                return null;
+                return a;
             })
         );
         return merged
     };
 
+    useEffect(() => {
+        (async () => {
+            await getResults()
+            handleOnRefresh()
+        })();
+    }, [session])
+
+
+    const getResults = async () => {
+        const result = await getUsers()
+        setData(result)
+        return result;
+    };
+
 
     useEffect(() => {
+        console.log('DTR: session', _session)
+        debugger;
         if (["CFW Beneficiary", "Guest"].includes(_session?.userData?.role || "")) {
             router.push(`/${baseUrl}/${_session.id}`);
         } else {
             (async () => {
                 const _session = await getSession() as SessionPayload;
-                console.log('_session', _session)
-
+                setSession(_session)
                 try {
                     if (!dexieDb.isOpen()) await dexieDb.open(); // Ensure DB is open 
                 } catch (error) {
                     console.error('Error fetching data:', error);
                 }
-                const user = await getUsers()
-                setData(user)
-                console.log('getUsers', user)
+                console.log('_session', _session)
             })();
         }
     }, [])
- 
+
+
+    const handleOnRefresh = async () => {
+        try {
+
+            if (!session) {
+                console.log('handleOnRefresh > session is not available');
+                return;
+            }
+
+            const results = await service.syncDLProfile(`person_profile/view/by_supervisor/${session.id}/`);
+            if (!results) {
+                console.log('Failed to fetch time records');
+                return;
+            }
+
+            await getResults();
+        } catch (error) {
+            console.error('Error syncing time records:', error);
+            toast({
+                variant: "warning",
+                title: "Unable to Fetch Latest Data",
+                description: error instanceof Error
+                    ? `Error: ${error.message}`
+                    : "Unable to sync DTR records. Please try logging out and back in to refresh your session.",
+            });
+        }
+    };
+
     const handleDelete = (row: any) => {
         console.log('Delete:', row);
     };
@@ -128,10 +173,6 @@ export default function AccomplishmentReport() {
         router.push(`/${baseUrl}/${row.user_id}`);
     };
 
-    const handleAddNewRecord = (newRecord: any) => {
-        console.log('handleAddNewRecord', newRecord)
-    };
-
     return (
 
         <Card>
@@ -139,7 +180,7 @@ export default function AccomplishmentReport() {
                 <CardTitle className="mb-2 flex flex-col md:flex-row items-center md:justify-between text-center md:text-left">
                     {/* Logo Section */}
                     <div className="flex-shrink-0">
-                        <img src="/images/logos.png" alt="DSWD KC BAGONG PILIPINAS" className="h-12 w-auto" />
+                        <Image src="/images/logos.png" width={300} height={300} alt="DSWD KC BAGONG PILIPINAS" className="h-12 w-auto" />
                     </div>
 
                     {/* Title Section */}
@@ -156,8 +197,8 @@ export default function AccomplishmentReport() {
                         <AppTable
                             data={data}
                             columns={columns} 
-                            onDelete={handleDelete}
                             onRowClick={handleRowClick}
+                            onRefresh={handleOnRefresh}
                         />
                     </div>
                 </div>

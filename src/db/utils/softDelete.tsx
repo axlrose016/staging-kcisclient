@@ -36,7 +36,6 @@ export const softDelete = async (
 
       // Handle related child tables
       if(child){
-        debugger;
       const relations = child[tableName];
       if (relations) {
         for (const { table: childTableName, foreignKey } of relations) {

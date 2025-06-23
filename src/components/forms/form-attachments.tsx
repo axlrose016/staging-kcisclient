@@ -70,7 +70,7 @@ class AttachmentDatabase extends Dexie {
   }
 }
 
-const db = new AttachmentDatabase()
+export const attachmentDb = new AttachmentDatabase()
 
 const _session = await getSession() as SessionPayload;
 
@@ -99,7 +99,7 @@ export default function FormAttachments({ record_id, module_path }: FormAttachme
 
   const loadSavedAttachments = async () => {
     try {
-      const attachments = await db.attachments
+      const attachments = await attachmentDb.attachments
         .toArray()
         .then((results) =>
           results
@@ -276,7 +276,7 @@ export default function FormAttachments({ record_id, module_path }: FormAttachme
           remarks: null,
         }
 
-        await db.attachments.add(attachmentData)
+        await attachmentDb.attachments.add(attachmentData)
 
         // Complete progress
         setFiles((prev) => prev.map((f) => (f.id === file.id ? { ...f, progress: 100, saved: true } : f)))
@@ -303,7 +303,7 @@ export default function FormAttachments({ record_id, module_path }: FormAttachme
       const now = new Date().toISOString()
 
       // Soft delete - update the record instead of removing it
-      await db.attachments.update(id, {
+      await attachmentDb.attachments.update(id, {
         is_deleted: true,
         deleted_date: now,
         deleted_by: _session.userData.email,

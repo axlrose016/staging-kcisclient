@@ -2,6 +2,7 @@
 /* eslint-disable react/react-in-jsx-scope */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
+import { v4 as uuidv4 } from 'uuid';
 import { AppTable } from "@/components/app-table";
 import {
   ICFWAssessment,
@@ -30,7 +31,14 @@ const baseUrl = "/personprofile/work-plan";
 import { getSession } from "@/lib/sessions-client";
 import { SessionPayload } from "@/types/globals";
 import { IAttachments } from "@/components/interfaces/general/attachments";
-
+import {
+  CheckCircle,
+  Clock,
+  AlertCircle,
+  Ban,
+  HelpCircle,
+  BookMarkedIcon,
+} from "lucide-react";
 const _session = (await getSession()) as SessionPayload;
 
 // "raw_id": 0,
@@ -59,24 +67,51 @@ const columnsWorkPlan = [
     header: "Status",
     accessorKey: "status_id",
     filterType: "select",
-    filterOptions: [null, 2, 15, 10],
+    filterOptions: [null, 0, 2, 15, 10],
     sortable: true,
     align: "center",
-    cell: (value: any) => (
-      <Badge
-        variant={
-          value == 2
-            ? "green"
-            : value == null
-            ? "warning"
-            : value == 15
-            ? "destructive"
-            : "default"
-        }
-      >
-        {value == 0 || value == null ? "Pending" : "Approved"}
-      </Badge>
-    ), //for change
+    cell: (value: any) => {
+      let icon: JSX.Element;
+      let variant: "green" | "warning" | "secondary" | "destructive" | "default" | "outline";
+
+      if (value === 2) {
+        icon = <CheckCircle className="w-4 h-4 mr-1" />;
+        variant = "green";
+      } else if (value === null || value === 0) {
+        icon = <Clock className="w-4 h-4 mr-1" />;
+        variant = "warning";
+      } else if (value === 10) {
+        icon = <AlertCircle className="w-4 h-4 mr-1" />;
+        variant = "secondary";
+      } else if (value === 15) {
+        icon = <Ban className="w-4 h-4 mr-1" />;
+        variant = "destructive";
+      }
+      else if (value === 22) {
+        icon = <BookMarkedIcon className="w-4 h-4 mr-1" />;
+        variant = "outline";
+      } else {
+        icon = <HelpCircle className="w-4 h-4 mr-1" />;
+        variant = "default";
+      }
+
+      return (
+        <Badge variant={variant} className="flex items-center gap-1">
+          {icon}
+          {value === 2
+            ? "Approved"
+            : value === null || value === 0
+              ? "Pending"
+              : value === 10
+                ? "For Compliance"
+                : value === 15
+                  ? "Rejected"
+                  : value == 22
+                    ? "Draft"
+                    : "Unknown"}
+        </Badge>
+      );
+    }
   },
   {
     id: "work_plan_title",
@@ -122,6 +157,15 @@ const columnsWorkPlan = [
     cell: null,
   },
   {
+    id: "no_of_beneficiaries",
+    header: "Number of Beneficiaries",
+    accessorKey: "no_of_beneficiaries",
+    filterType: "text",
+    sortable: true,
+    align: "center",
+    cell: null,
+  },
+  {
     id: "created_date",
     header: "Created At",
     accessorKey: "created_date",
@@ -130,35 +174,20 @@ const columnsWorkPlan = [
     align: "left",
     cell: null,
   },
-  // {
-  //     id: 'area_focal_person_id',
-  //     header: 'Focal Person',
-  //     accessorKey: 'area_focal_person_id',
-  //     filterType: 'text',
-  //     sortable: true,
-  //     align: "left",
-  //     cell: null,
-  // },
-  // {
-  //     id: 'immedidiate_supervisor_id',
-  //     header: 'Immediate Supervisor',
-  //     accessorKey: 'immedidiate_supervisor_id',
-  //     filterType: 'text',
-  //     sortable: true,
-  //     align: "left",
-  //     cell: null,
-  // },
-  // {
-  //     id: 'alternative_supervisor_id',
-  //     header: 'Alternate Supervisor',
-  //     accessorKey: 'alternative_supervisor_id',
-  //     filterType: 'text',
-  //     sortable: true,
-  //     align: "left",
-  //     cell: null,
-  // },
+  {
+    id: "last_modified_date",
+    header: "Modified At",
+    accessorKey: "last_modified_date",
+    filterType: "text",
+    sortable: true,
+    align: "left",
+    cell: null,
+  },
+
 ];
-import LoginService from "@/app/login/LoginService";
+import WorkPlansDashboard from "./dashboard/page";
+import { formatDistanceToNow, format } from "date-fns";
+import LoginService from "@/components/services/LoginService";
 export default function WorkPlanMasterList() {
   const [dataWorkPlan, setDataWorkPlan] = useState<IWorkPlan[]>([]);
   const [selectedPWorkPlan, setSelectedWorkPlan] = useState<IWorkPlan[]>([]);
@@ -191,11 +220,60 @@ export default function WorkPlanMasterList() {
   const [pageNo, setPageNo] = useState(1);
   const router = useRouter();
   // const [data, setData] = useState([]);
-  const handleEligible = (selectedCFWID?: string) => {};
+  const handleEligible = (selectedCFWID?: string) => { };
 
   const handleCreateNewWorkPlan = () => {
+    localStorage.removeItem("work_plan")
+    localStorage.removeItem("selectedBeneficiaries")
+
+    const work_plan_details = {
+      "id": uuidv4(),
+      "work_plan_title": "",
+      "immediate_supervisor_id": _session.id,
+      "deployment_area_name": "",
+      "office_name": "",
+      "no_of_days_program_engagement": "",
+      "approved_work_schedule_from": "",
+      "approved_work_schedule_to": "",
+      "objectives": ""
+    }
+
+    localStorage.setItem("work_plan", JSON.stringify(work_plan_details))
+
+
     router.push(baseUrl + "/new");
   };
+
+  function mapApiToDexieWorkPlan(data: any): IWorkPlan {
+    debugger
+    return {
+      id: data.id,
+      work_plan_title: data.work_plan_title,
+      immediate_supervisor_id: data.immediate_supervisor_id,
+      office_name: data.division_office_name ?? "",
+      objectives: data.objectives,
+      no_of_days_program_engagement: data.no_of_days_program_engagement,
+      approved_work_schedule_from: data.approved_work_schedule_from,
+      approved_work_schedule_to: data.approved_work_schedule_to,
+      status_id: data.status_id ?? null,
+      created_date: data.created_date,
+      created_by: data.created_by,
+      last_modified_date: data.last_modified_date ?? null,
+      last_modified_by: data.last_modified_by ?? null,
+      push_status_id: data.push_status_id,
+      push_date: data.push_date ?? null,
+      deleted_date: data.deleted_date ?? null,
+      deleted_by: data.deleted_by ?? null,
+      is_deleted: data.is_deleted ?? null,
+      remarks: data.remarks ?? null,
+      alternate_supervisor_id: data.alternate_supervisor_id,
+      area_focal_person_id: data.area_focal_person_id,
+      // total_number_of_bene: data.total_of_beneficiaries ?? 0,
+    }
+  }
+
+
+
   const loadWorkPlan = async () => {
     try {
       const fetchData = async (endpoint: string) => {
@@ -207,7 +285,7 @@ export default function WorkPlanMasterList() {
           );
 
           const response = await fetch(endpoint, {
-            method: "POST",
+            method: "GET",
             headers: {
               Authorization: `bearer ${onlinePayload.token}`,
               "Content-Type": "application/json",
@@ -219,16 +297,32 @@ export default function WorkPlanMasterList() {
           } else {
             debugger;
             const data = await response.json();
-            setDataWorkPlan(data);
 
-            
-            console.log("🗣️Work Plan from API ", data?.data);
+            const formatted = data.map((item: any) => {
+              const createdAt = new Date(item.created_date);
+              const modifiedAt = new Date(item.last_modified_date);
+              return {
+                ...item,
+                created_date: `${format(createdAt, "MMMM d, yyyy")} (${formatDistanceToNow(createdAt, { addSuffix: true })})`,
+                last_modified_date: `${format(modifiedAt, "MMMM d, yyyy")} (${formatDistanceToNow(modifiedAt, { addSuffix: true })})`,
+              };
+            });
+
+            setDataWorkPlan(formatted);
+            console.log("Work Plan with Created Date", formatted)
+            // setDataWorkPlan(data);
+            const workPlans: IWorkPlan[] = data.map(mapApiToDexieWorkPlan);
+            await dexieDb.work_plan.bulkPut(workPlans);
+
+
+
+            console.log("🗣️Work Plan from API ", data);
             console.log("🗣️Work Plan from API ", data.length);
 
             if (data.length == 0 || data == undefined) {
               setDataWorkPlan([]);
             } else {
-              setDataWorkPlan(data?.data);
+              setDataWorkPlan(formatted);
             }
           }
         } catch (error: any) {
@@ -241,8 +335,8 @@ export default function WorkPlanMasterList() {
           }
         }
       };
-// alert(_session.id)
-      fetchData(process.env.NEXT_PUBLIC_API_BASE_URL_KCIS + "work_plan/view/by_id/" + _session.id);
+      // alert(_session.id)
+      fetchData(process.env.NEXT_PUBLIC_API_BASE_URL_KCIS + "work_plan/view/by_id/" + _session.id + "/");
     } catch (error) {
       console.error(error);
     } finally {
@@ -253,83 +347,12 @@ export default function WorkPlanMasterList() {
   const fetchDataWorkPlanFromDexieDb = async () => {
     loadWorkPlan();
 
-    // const supervisorId = _session.id;
-    // // alert(supervisorId)
-    // const workPlans = await dexieDb.work_plan
-    //   .where("immediate_supervisor_id")
-    //   .equals(supervisorId)
-    //   .toArray();
-    // setDataWorkPlan(workPlans);
-    // console.log("Work Plan list", workPlans);
+
   };
   useEffect(() => {
     setLoading(false);
     fetchDataWorkPlanFromDexieDb();
-    // Array of matching work plans
 
-    // async function loadWorkPlan() {
-    //     try {
-    //         const fetchData = async (endpoint: string) => {
-    //             const cacheKey = `${endpoint}_page_${page}`;
-    //             if (cache[cacheKey]) {
-    //                 console.log("Using cached data for:", cacheKey);
-    //                 setDataWorkPlan(cache[cacheKey]);
-    //                 return;
-    //             }
-
-    //             const signal = newAbortSignal(5000);
-    //             try {
-    //                 debugger;
-    //                 const onlinePayload = await LoginService.onlineLogin("dsentico@dswd.gov.ph", "Dswd@123");
-
-    //                 const response = await fetch(endpoint, {
-    //                     method: "GET",
-    //                     headers: {
-    //                         Authorization: `bearer ${onlinePayload.token}`,
-    //                         "Content-Type": "application/json",
-    //                     },
-    //                     // body: JSON.stringify({
-    //                     //     "page_number": 1,
-    //                     //     "page_size": 1000
-    //                     // })
-    //                 });
-
-    //                 if (!response.ok) {
-    //                     console.log(response);
-    //                 } else {
-    //                     debugger;
-    //                     const data = await response.json();
-
-    //                     console.log("🗣️Work Plan from API ", data?.data);
-    //                     console.log("🗣️Work Plan from API ", data.length);
-
-    //                     cache[cacheKey] = data?.data; // Cache the data
-    //                     if (data.length == 0 || data == undefined) {
-    //                         setDataWorkPlan([])
-    //                     } else {
-
-    //                         setDataWorkPlan(data?.data);
-    //                     }
-    //                 }
-    //             } catch (error: any) {
-    //                 if (error.name === "AbortError") {
-    //                     console.log("Request canceled", error.message);
-    //                     alert("Request canceled" + error.message);
-    //                 } else {
-    //                     console.error("Error fetching data:", error);
-    //                     alert("Error fetching data:" + error);
-    //                 }
-    //             }
-    //         };
-
-    //         fetchData(process.env.NEXT_PUBLIC_API_BASE_URL_KCIS + "work_plan/view/");
-    //     } catch (error) {
-    //         console.error(error);
-    //     } finally {
-    //         setLoading(false);
-    //     }
-    // }
-    // loadWorkPlan();
   }, []);
 
   if (loading) {
@@ -347,14 +370,19 @@ export default function WorkPlanMasterList() {
       </>
     );
   }
-
+  const handleRefresh = async () => {
+    loadWorkPlan()
+  }
   const handleRowClick = (row: any) => {
     // check if mayroon sa dexiedb n record ng supervisor
     // if yes, load it
     // if no then get from api
+    localStorage.removeItem("selectedBeneficiaries")
     console.log("Row clicked:", row);
+
     const workPlanId = row.id;
-    if (row.status_id == 0) {
+    // alert(workPlanId)
+    if (row.status_id == 0 || row.status_id == 10 || row.status_id == 22 || row.status_id == null) {
       // 0=edit (url: url: /personprofile/workplan/uuid), 1=approved (viewing - url: /personprofile/workplan/uuid)
 
       router.push("/personprofile/work-plan/" + workPlanId + "/edit");
@@ -364,187 +392,35 @@ export default function WorkPlanMasterList() {
     }
     return;
 
-    // dexieD
-    // try {
-
-    //     const fetchSelectedData = async (endpoint: string) => {
-    //         const signal = newAbortSignal(5000);
-    //         try {
-    //             debugger;
-    //             const onlinePayload = await LoginService.onlineLogin("dsentico@dswd.gov.ph", "Dswd@123");
-    //             const response = await fetch(endpoint, {
-
-    //                 method: "GET",
-    //                 headers: {
-    //                     Authorization: `bearer ${onlinePayload.token}`,
-    //                     "Content-Type": "application/json",
-    //                 },
-    //             });
-
-    //             if (!response.ok) {
-    //                 console.log("Work Plan > view > error ", response);
-
-    //             } else {
-    //                 const lsUserIdViewOnly = localStorage.getItem("userIdViewOnly");
-    //                 if (lsUserIdViewOnly) {
-    //                     const parsedUserIdViewOnly = JSON.parse(lsUserIdViewOnly);
-    //                 }
-    //                 localStorage.setItem("userIdViewOnly", JSON.stringify(row.id));
-    //                 debugger;
-    //                 const data = await response.json();
-    //                 console.log("Person profile > view > success ", data)
-    //                 setSelectedWorkPlan(data);
-    //                 setProfilesSector(data.person_profile_sector);
-    //                 setProfileCfwDisabilities(data.person_profile_disability ?? []);
-    //                 setProfilesFamCom(data.person_profile_family_composition);
-    //                 setProfilesAttachments(data.attachments);
-    //                 setAssessmentDetials(data.cfw_assessment);
-    //                 setProfileCfwFamProgramDetails(data.person_profile_cfw_fam_program_details);
-    //                 console.log("😘Person Profile Family Composition: ", data.person_profile_family_composition);
-    //                 console.log("😊Person Profile Attachments: ", data.attachments);
-    //                 console.log("😂Person Profile CFW Family Program Details: ", data.person_profile_cfw_fam_program_details);
-    //                 console.log("❤️Person Profile ID: ", data.id);
-
-    //                 console.log("✅✅Person Profile Sector: ", data.person_profile_sector);
-    //                 console.log("Last Name: ", data.last_name)
-
-    //                 // save to dexiedb
-    //                 dexieDb.open();
-    //                 dexieDb.transaction('rw', [
-    //                     dexieDb.person_profile,
-    //                     dexieDb.person_profile_sector,
-    //                     dexieDb.person_profile_disability,
-    //                     dexieDb.person_profile_family_composition,
-    //                     dexieDb.attachments,
-    //                     dexieDb.cfwassessment,
-    //                     dexieDb.person_profile_cfw_fam_program_details], async () => {
-    //                         try {
-    //                             const existingRecord = await dexieDb.person_profile.get(data.id);
-    //                             if (existingRecord) {
-    //                                 await dexieDb.person_profile.update(data.id, data);
-    //                                 await dexieDb.person_profile_sector.update(data.id, data.person_profile_sector);
-    //                                 await dexieDb.person_profile_disability.update(data.id, data.person_profile_disability ?? []);
-    //                                 await dexieDb.person_profile_family_composition.update(data.id, data.person_profile_family_composition ?? []);
-    //                                 await dexieDb.attachments.update(data.id, data.attachments ?? []);
-    //                                 await dexieDb.cfwassessment.update(data.id, data.cfw_assessment ?? []);
-    //                                 await dexieDb.person_profile_cfw_fam_program_details.update(data.id, data.person_profile_cfw_fam_program_details ?? []);
-    //                                 console.log("Record updated in DexieDB:", data.id);
-    //                             } else {
-    //                                 await dexieDb.person_profile.add(data);
-    //                                 await dexieDb.cfwassessment.add(data.cfw_assessment);
-    //                                 if (data.person_profile_disability.length !== 0) {
-    //                                     await dexieDb.person_profile_disability.bulkAdd(data.person_profile_disability);
-    //                                 }
-    //                                 if (data.person_profile_family_composition.length !== 0) {
-    //                                     for (let i = 0; i < data.person_profile_family_composition.length; i++) {
-    //                                         const family = data.person_profile_family_composition[i];
-    //                                         await dexieDb.person_profile_family_composition.add(family); // Save the object without raw_id
-    //                                     }
-    //                                 }
-    //                                 if (data.person_profile_sector.length !== 0) {
-    //                                     for (let i = 0; i < data.person_profile_sector.length; i++) {
-    //                                         await dexieDb.person_profile_sector.bulkAdd(data.person_profile_sector);
-    //                                     }
-    //                                 }
-    //                                 if (data.attachments.length !== 0) {
-    //                                     for (let i = 0; i < data.attachments.length; i++) {
-    //                                         await dexieDb.attachments.bulkAdd(data.attachments);
-    //                                     }
-
-    //                                 }
-    //                                 if (data.person_profile_cfw_fam_program_details) {
-    //                                     for (let i = 0; i < data.person_profile_cfw_fam_program_details.length; i++) {
-    //                                         await dexieDb.person_profile_cfw_fam_program_details.bulkAdd(data.person_profile_cfw_fam_program_details);
-    //                                     }
-    //                                 }
-    //                                 console.log("➕New record added to DexieDB:", data.id);
-    //                             }
-    //                         } catch (error) {
-    //                             console.log("Error saving to DexieDB:", error);
-    //                         }
-    //                     });
-
-    //                 router.push(`/${baseUrl}/${row.id}`);
-    //             }
-
-    //         } catch (error: any) {
-    //             console.log("Error fetching data:", error);
-    //             if (error.name === "AbortError") {
-    //                 console.log("Request canceled", error.message);
-    //                 alert("Request canceled" + error.message);
-    //             } else {
-    //                 console.error("Error fetching data:", error);
-    //                 alert("Error fetching data:" + error);
-    //             }
-    //         }
-    //     }
-    //     fetchSelectedData("https://kcnfms.dswd.gov.ph/api/person_profile/view/" + row.id);
-    // }
-    // catch (error) {
-    //     console.log("Error fetching data:", error);
-    // }
-    // router.push(`/${baseUrl}/${row.user_id}`);
-    // router.push(`/${baseUrl}/${row.id}`);
   };
 
   return (
     <div className="p-2">
+      {/* Person Profile ID{_session.id}  */}
+      {/* //02af6e24-1bec-4568-b9bf-8133e7faa3dc */}
       {/* Work Plans: {JSON.stringify(dataWorkPlan)} */}
-      <Dialog open={forReviewApprove} onOpenChange={setForReviewApprove}>
-        <DialogContent className="w-[400px] shadow-lg z-50 pb-[50px]">
-          <DialogTitle>Approval Confirmation</DialogTitle>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Approval Confirmation</DialogTitle>
-            </DialogHeader>
-            <Textarea placeholder="Input Assessment" className="mt-5" />
-            {/* <p>Record ID: { } has been approved.</p> */}
-            <DialogFooter>
-              <Button variant={"outline"}>Close</Button>
-              <Button
-                onClick={() => handleEligible(selectedCFWID)}
-                variant={"default"}
-              >
-                Eligible
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </DialogContent>
-      </Dialog>
-      {/* {!forReviewApprove ?
-                (
-                    <Card className="w-[400px] shadow-lg z-50">
-                        <CardHeader>
-                            <CardTitle>Approval Confirmation</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <Textarea placeholder="Input Assessment"></Textarea>
-                            <p>Record ID: { } has been approved.</p>
-                        </CardContent>
-                        <CardFooter>
-                            <Button  >Close</Button>
-                        </CardFooter>
-                    </Card>
-                )
-                        columns={profiles[0] ? Object.keys(profiles[0])
-                            .filter(key => !['id', 'modality'].includes(key)) // Simplified hiding logic
-                            .map(key => ({
 
-                : null
-            } */}
 
       <div className="min-h-screen">
         <div className="min-h-screen">
           {/* <Button onClick={(e) => fetchData("http://10.10.10.162:9000/api/person_profiles/view/pages/")}>Test</Button> */}
+          {/* role {_session.userData.role} */}
+          {_session.userData.role == "CFW Immediate Supervisor" ? (
+            <AppTable
+              // data={[]}
+              data={dataWorkPlan != undefined ? dataWorkPlan : []}
+              columns={columnsWorkPlan}
+              // onEditRecord={handleEdit}
+              onClickAddNew={handleCreateNewWorkPlan}
+              onRowClick={handleRowClick}
+              onRefresh={handleRefresh}
+            />
 
-          <AppTable
-            // data={[]}
-            data={dataWorkPlan != undefined ? dataWorkPlan : []}
-            columns={columnsWorkPlan}
-            // onEditRecord={handleEdit}
-            onClickAddNew={handleCreateNewWorkPlan}
-            onRowClick={handleRowClick}
-          />
+          ) : (
+
+            <WorkPlansDashboard />
+          )}
+
         </div>
       </div>
     </div>

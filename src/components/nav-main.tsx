@@ -34,7 +34,7 @@ export function NavMain({
   }[]
 }) {
   return (
-    <SidebarGroup>
+    <SidebarGroup> 
       <SidebarGroupLabel>Sub-Modules</SidebarGroupLabel>
       <SidebarMenu>
         {items.map((item) => (

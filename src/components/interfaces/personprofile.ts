@@ -214,51 +214,51 @@ export interface ICFWAssessment {
   person_profile_id: string;
   deployment_area_category_id: number;  
   deployment_area_id: number;
-  division_office_name: string;  
-  assessment: string;
-  number_of_days_program_engagement: number;
+  division_office_name: string | null;  
+  assessment: string | null;
+  number_of_days_program_engagement: number | null;
   area_focal_person_id: string | null; 
   immediate_supervisor_id: string | null;
   alternate_supervisor_id: string | null;
-  cfw_category_id: boolean;  
-  work_plan_id: string // ✨ bago to master
-  status_id: number;
-  user_id: string;
-  created_date: string,
-  created_by: string,
-  last_modified_date?: string | null,
-  last_modified_by?: string | null,
-  push_status_id?: number,
-  push_date?: string | null,
-  deleted_date: string | null,
-  deleted_by: string | null,
-  is_deleted: boolean,
-  remarks?: string | null,
+  cfw_category_id: boolean | null;  
+  work_plan_id: string | null;// ✨ bago to master
+  status_id: number | null;
+  user_id: string | null;
+  created_date: string ;
+  created_by: string | null;
+  last_modified_date?: string | null;
+  last_modified_by?: string | null;
+  push_status_id?: number;
+  push_date?: string | null;
+  deleted_date: string | null;
+  deleted_by: string | null;
+  is_deleted: boolean;
+  remarks?: string | null;
 }
 
 export interface IWorkPlan {
-   id: string; 
-  work_plan_title: string; //✨ 
-  immediate_supervisor_id: string; // ✔️
-  office_name?: string; //✨
-  objectives: string; // ✔️
-  no_of_days_program_engagement: number; // ✔️
-  approved_work_schedule_from: string;
-  approved_work_schedule_to: string; //✨
-  status_id: number; // ✔️
-  created_date: string, // ✔️
-  created_by: string, // ✔️
-  last_modified_date?: string | null, // ✔️
-  last_modified_by?: string | null, // ✔️
-  push_status_id?: number, // ✔️
-  push_date?: string | null, // ✔️
-  deleted_date: string | null, // ✔️
-  deleted_by: string | null, // ✔️
-  is_deleted: boolean, // ✔️
-  remarks?: string | null, // ✔️
-  alternate_supervisor_id: string | null; // ✔️
-  area_focal_person_id: string | null; // ✔️ //main focal person of the company i.e HEI Focal Person // ✔️
-  total_number_of_bene: number; //✨
+  id: string; //✔️
+  work_plan_title: string;  //✔️
+  immediate_supervisor_id: string; //✔️
+  office_name?: string;  
+  objectives: string; //✔️
+  no_of_days_program_engagement: number; //✔️
+  approved_work_schedule_from: string; //✔️
+  approved_work_schedule_to: string;  //✔️
+  status_id?: number | null; //✔️
+  created_date: string, //✔️
+  created_by: string, //✔️
+  last_modified_date?: string | null, //✔️
+  last_modified_by?: string | null, //✔️
+  push_status_id?: number, //✔️
+  push_date?: string | null, //✔️
+  deleted_date?: string | null, 
+  deleted_by?: string | null, 
+  is_deleted: boolean | null,  //✔️
+  remarks?: string | null,  //✔️
+  alternate_supervisor_id: string | null;  //✔️
+  area_focal_person_id: string | null;  //✔️//main focal person of the company i.e HEI Focal Person 
+  // total_number_of_bene?: number;  
   
 }
 
@@ -304,9 +304,9 @@ export interface IWorkPlanCfw {
 }
 export interface IAccomplishmentReport {
   id: string;  
-  person_id: string;
-  period_cover_from: Date;
-  period_cover_to: Date;
+  person_profile_id: string;
+  period_cover_from: Date | string;
+  period_cover_to: Date | string ;
   work_plan_id: string;
   accomplishment_actual_task: string;
   status_id: number;

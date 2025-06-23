@@ -27,7 +27,7 @@ function newAbortSignal(timeoutMs: number) {
 import { getSession } from '@/lib/sessions-client';
 import { SessionPayload } from '@/types/globals';
 import axios from 'axios';
-import LoginService from "@/app/login/LoginService";
+import LoginService from "@/components/services/LoginService";
 import { IAttachments } from "@/components/interfaces/general/attachments";
 
 const _session = await getSession() as SessionPayload;
@@ -246,9 +246,9 @@ export default function PersonProfileMasterlist({ page }: { page: number }) {
 
     }
 
-    const handleOnRefresh = () => {
-        alert("yw")
-    }
+    // const handleOnRefresh = () => {
+    //     alert("yw")
+    // }
     const handleForReview = (id: string) => {
         setForReviewApprove(!forReviewApprove);
         // alert(id + forReviewApprove);
@@ -463,7 +463,7 @@ export default function PersonProfileMasterlist({ page }: { page: number }) {
                     <AppTable
                         data={profiles}
                         columns={columnsMasterlist}
-                        onRefresh={handleOnRefresh}
+                        // onRefresh={handleOnRefresh}
                         // onEdit={handleEdit}
                         // onDelete={handleDelete}
                         onRowClick={handleRowClick}

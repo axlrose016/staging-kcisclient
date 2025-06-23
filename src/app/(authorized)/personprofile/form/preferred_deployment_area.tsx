@@ -1,6 +1,6 @@
 import { FormDropDown } from "@/components/forms/form-dropdown";
 import { PictureBox } from "@/components/forms/picture-box";
-import { LibraryOption } from "@/components/interfaces/library-interface";
+import { IRoles, LibraryOption } from "@/components/interfaces/library-interface";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useEffect, useState } from "react";
@@ -9,7 +9,12 @@ import { getDeploymentAreaLibraryOptions, getTypeOfWorkLibraryOptions } from "@/
 import { getOfflineLibDeploymentArea, getOfflineLibDeploymentAreaCategories, getOfflineLibSchools, getOfflineLibTypeOfWork } from "@/components/_dal/offline-options";
 import { IPersonProfile } from "@/components/interfaces/personprofile";
 import { dexieDb } from "@/db/offline/Dexie/databases/dexieDb";
-export default function PrefferedDeploymentArea({ errors, capturedData, updateFormData, user_id_viewing }: { errors: any; capturedData: Partial<IPersonProfile>; updateFormData: (newData: Partial<IPersonProfile>) => void, user_id_viewing: string }) {
+interface ISelectedRole {
+    id: string;
+    role_description: string;
+}
+
+export default function PrefferedDeploymentArea({ errors, capturedData, updateFormData, user_id_viewing, selectedRoleDataNew }: { errors: any; capturedData: Partial<IPersonProfile>; updateFormData: (newData: Partial<IPersonProfile>) => void, user_id_viewing: string, selectedRoleDataNew?: ISelectedRole | null }) {
     const [userIdViewing, setUserIdViewing] = useState(user_id_viewing);
     const [relationOptions, setRelationOptions] = useState<LibraryOption[]>([]);
     const [selectedRelation, setSelectedRelation] = useState("");
@@ -278,13 +283,22 @@ export default function PrefferedDeploymentArea({ errors, capturedData, updateFo
 
     return (
         <div >
-            <div className={`flex grid sm:col-span-3 sm:grid-cols-3 ${userIdViewing ? "" : "hidden"}`}>
+            {/* <div>
+                {JSON.stringify(selectedRoleDataNew)}
+                3d735b9c-f169-46e0-abd1-59f66db1943c - immediate supervisor
+            </div> */}
+            <div className={`flex grid sm:col-span-3 sm:grid-cols-3 
+                ${userIdViewing ||
+                    selectedRoleDataNew?.id == "3d735b9c-f169-46e0-abd1-59f66db1943c" ||
+                    selectedRoleDataNew?.id == "eed84e85-cd50-49eb-ab19-a9d9a2f3e374"
+                    ? "" : "hidden"}`}>
                 <div className="p-2 col-span-4">
                     <Label htmlFor="assigned_deployment_area_category_id" className="block text-sm font-medium mb-1">Deployment Area Category <span className='text-red-500'> *</span></Label>
                     {/* <p>selected area cat id: {selectedAssignedDeploymentAreaCategoryId}</p>
                     <p>selected area  id: {selectedAssignedDeploymentAreaId}</p> */}
                     <FormDropDown
                         id="assigned_deployment_area_category_id"
+                        name="assigned_deployment_area_category_id"
                         options={deploymentAreaCategoriesOptions}
                         selectedOption={selectedAssignedDeploymentAreaCategoryId ?? null}
                         onChange={(id) => updateAssignedDeploymentAreaCategoryId(id)}
@@ -293,14 +307,20 @@ export default function PrefferedDeploymentArea({ errors, capturedData, updateFo
                     />
                 </div>
             </div>
-            <div className={`flex grid sm:col-span-3 sm:grid-cols-3 ${userIdViewing ? "" : "hidden"}`}>
-                <div className={`p-2 col-span-4 ${selectedAssignedDeploymentAreaCategoryId == 0 || selectedAssignedDeploymentAreaCategoryId === 3 ? "hidden" : ""}`}>
+            <div className={`flex grid sm:col-span-3 sm:grid-cols-3 
+                ${userIdViewing ||
+                    selectedRoleDataNew?.id == "3d735b9c-f169-46e0-abd1-59f66db1943c" ||
+                    selectedRoleDataNew?.id == "eed84e85-cd50-49eb-ab19-a9d9a2f3e374"
+                    ? "" : "hidden"}`}>
+                <div className={`p-2 col-span-4 
+                    ${selectedAssignedDeploymentAreaCategoryId == 0 || selectedAssignedDeploymentAreaCategoryId === 3 ? "hidden" : ""}`}>
                     {/* <p>Is School Selected?: {isSchoolAsDeploymentArea} Why</p> */}
                     {/* <p>{selectedAssignedDeploymentAreaCategoryId}</p> */}
-                    <Label htmlFor="assigned_deployment_area_id" className="block text-sm font-medium mb-1">Assigned Deployment Area <span className='text-red-500'> *</span></Label>
+                    <Label htmlFor="assigned_deployment_area_id_company" className="block text-sm font-medium mb-1">Assigned Deployment Area <span className='text-red-500'> *</span></Label>
                     {!isSchoolAsDeploymentArea ? (
                         <FormDropDown
-                            // id="assigned_deployment_area_id_company"
+                            id="assigned_deployment_area_id_company"
+                            name="assigned_deployment_area_id_company"
                             options={deploymentAreaOptions}
                             selectedOption={selectedAssignedDeploymentAreaId}
                             onChange={(e) => updateAssignedDeploymentArea(e)}
@@ -309,7 +329,8 @@ export default function PrefferedDeploymentArea({ errors, capturedData, updateFo
                         />
                     ) : (
                         <FormDropDown
-                            // id="assigned_deployment_area_id"
+                            id="assigned_deployment_area_id_school"
+                            name="assigned_deployment_area_id_school"
                             options={schoolOptions}
                             selectedOption={selectedAssignedDeploymentAreaId}
                             onChange={(e) => updateAssignedDeploymentArea(e)}
@@ -349,7 +370,7 @@ export default function PrefferedDeploymentArea({ errors, capturedData, updateFo
                     />
                 </div>
             </div>
-            <div id="preferred_deployment_info_form">
+            <div id="preferred_deployment_info_form" className={`${selectedRoleDataNew?.id == "37544f59-f3ba-45df-ae0b-c8fa4e4ce446" ? "" : "hidden"}`}>
                 <div className="flex grid sm:col-span-3 sm:grid-cols-3">
 
                     <div className="p-2 col-span-4">

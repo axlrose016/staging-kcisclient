@@ -10,9 +10,9 @@ import { v4 as uuidv4, validate } from 'uuid';
 import { CalendarDays, HandCoins, Loader2, Pause, RefreshCcwDot, TrendingUpIcon, UserX2 } from "lucide-react";
 import { set } from "date-fns";
 import clsx from "clsx";
-import PersonProfileService from "./form/PersonProfileService";
 import GeneratePDF from "@/components/pdf/CfwBooklet";
 import { useBulkSyncStore } from "@/lib/state/bulksync-store";
+import PersonProfileService from "@/components/services/PersonProfileService";
 
 
 //import pdfviewer from "../../components/PDF/pdfviewer";

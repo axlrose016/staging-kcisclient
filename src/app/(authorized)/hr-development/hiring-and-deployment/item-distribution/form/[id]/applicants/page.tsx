@@ -3,7 +3,7 @@ import { AppTable } from '@/components/app-table'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useParams, useRouter } from 'next/navigation';
 import React from 'react'
-import { HRService } from '../../../../../HRService';
+import { HRService } from '../../../../../../../../components/services/HRService';
 
 function ApplicantList() {
     const [data, setData] = React.useState([]);

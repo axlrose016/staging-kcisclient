@@ -9,7 +9,7 @@ import { resourceUsage } from 'process';
 import { error } from 'console';
 import { errors } from 'jose';
 import axios from 'axios';
-import PersonProfileService from '../PersonProfileService';
+import PersonProfileService from '../../../../components/services/PersonProfileService';
 // import { person_profile_sector } from '@/db/schema/person_profile_sector';
 import { cachedDataVersionTag } from 'v8';
 // import { useState } from 'react';

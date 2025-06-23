@@ -15,7 +15,7 @@ export class SettingsService {
     
     async getOfflineUsers(): Promise<IUser[]>{
         try{
-            const roleList = await dexieDb.roles.toArray();
+            const roleList = await libDb.roles.toArray();
             const roleMap = new Map(roleList.map(r => [r.id, r.role_description || ""]));
 
             const levelList = await libDb.lib_level.toArray();

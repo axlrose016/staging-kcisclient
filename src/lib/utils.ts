@@ -1,12 +1,28 @@
-import { clsx, type ClassValue } from "clsx";
+import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import DOMPurify from "dompurify";
+import CryptoJS from 'crypto-js';
+
 // import { HeaderData } from "@/app/(authorized)/report/designer/HeaderSettings";
 
 const encode = new TextEncoder();
+const SECRET_KEY = process.env.JSON_SECRET_KEY!;
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
+}
+
+export function ensureUint8Array(salt: Uint8Array | Record<string, number>): Uint8Array {
+  if (salt instanceof Uint8Array) {
+    return salt; // already fine
+  }
+
+  // Convert object to Uint8Array
+  const entries = Object.entries(salt)
+    .map(([k, v]) => [parseInt(k), v] as [number, number])
+    .sort((a, b) => a[0] - b[0]);
+
+  return new Uint8Array(entries.map(([_, v]) => v));
 }
 
 export async function hashPassword(
@@ -154,3 +170,37 @@ function removeEmptyValues(obj: Record<string, any>): Record<string, any> {
 export function cleanArray(data: Record<string, any>[]): Record<string, any>[] {
   return data.map(removeEmptyValues);
 }
+
+export function encryptJson(jsonData: string){
+  return CryptoJS.AES.encrypt(jsonData, SECRET_KEY).toString();
+}
+
+export async function encryptJsonAsync(jsonData: string){
+  return CryptoJS.AES.encrypt(jsonData, SECRET_KEY).toString();
+}
+
+export const decryptJsonAsync = async (encryptedText: string): Promise<string> => {
+  try {
+
+    const bytes = CryptoJS.AES.decrypt(encryptedText, SECRET_KEY);
+    const decrypted = bytes.toString(CryptoJS.enc.Utf8);
+    if (!decrypted) throw new Error("Failed to decrypt. Possibly wrong key or malformed input.");
+    return decrypted;
+  } catch (err) {
+    console.error("Decryption error:", err);
+    return "";
+  }
+};
+
+export function decryptJson(encryptedText: string){
+  try {
+
+    const bytes = CryptoJS.AES.decrypt(encryptedText, SECRET_KEY);
+    const decrypted = bytes.toString(CryptoJS.enc.Utf8);
+    if (!decrypted) throw new Error("Failed to decrypt. Possibly wrong key or malformed input.");
+    return decrypted;
+  } catch (err) {
+    console.error("Decryption error:", err);
+    return "";
+  }
+};

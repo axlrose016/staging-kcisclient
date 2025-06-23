@@ -1,5 +1,5 @@
 "use client"
-import { LibrariesService } from "@/app/(authorized)/library/LibrariesService";
+import { LibrariesService } from "@/components/services/LibrariesService";
 import { AppTable } from "@/components/app-table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useRouter } from "next/navigation";

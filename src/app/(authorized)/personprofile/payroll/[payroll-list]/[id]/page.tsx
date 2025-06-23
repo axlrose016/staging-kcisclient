@@ -7,7 +7,7 @@ import { CheckCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ILibSchoolProfiles } from '@/components/interfaces/library-interface';
-import { IPersonProfile } from '@/components/interfaces/personprofile';
+import { ICFWAssessment, IPersonProfile } from '@/components/interfaces/personprofile';
 import { SessionPayload } from '@/types/globals';
 import { dexieDb } from '@/db/offline/Dexie/databases/dexieDb';
 import { getSession } from '@/lib/sessions-client';
@@ -24,6 +24,7 @@ import { toast } from '@/hooks/use-toast';
 import { v5 as uuidv5, v4 as uuidv4 } from 'uuid';
 import { Tooltip, TooltipContent } from '@/components/ui/tooltip';
 import { TooltipTrigger } from '@radix-ui/react-tooltip';
+import { libDb } from '@/db/offline/Dexie/databases/libraryDb';
 
 export interface dataI {
     id: string;
@@ -65,9 +66,10 @@ export default function PayrollUser() {
     const [user, setUser] = useState<UserTypes>();
     const [session, setSession] = useState<SessionPayload>();
 
+    const [assessment, setAssessment] = useState<ICFWAssessment>()
 
     const [dtrlist, setDTRList] = useState<ICFWTimeLogs[]>([]);
-    const [bene, setPayrollBeneData] = useState<IPayrollBene>([])
+    const [bene, setPayrollBeneData] = useState<IPayrollBene>()
     const [statusesOptions, setStatusesOptions] = useState<LibraryOption[]>([]);
     const [submissionLogs, setSubmissionLogs] = useState<ISubmissionLog[]>([]);
     const [selectedStatus, setSelectedStatus] = useState<ISubmissionLog>({
@@ -129,6 +131,7 @@ export default function PayrollUser() {
 
             await getResults(_session)
 
+
         })();
     }, [])
 
@@ -137,7 +140,7 @@ export default function PayrollUser() {
             .equals(params!.id).first();
 
         const merge = {
-            ...await dexieDb.lib_school_profiles.where("id").equals(user!.school_id!).first(),
+            ...await libDb.lib_school_profiles.where("id").equals(user!.school_id!).first(),
             ...user
         };
 
@@ -153,6 +156,18 @@ export default function PayrollUser() {
         setDTRList(dtr)
         // console.log('getResults > user', { user, dtr, id: params!.id })
         setUser(merge as UserTypes);
+
+
+        const assessment = await dexieDb.cfwassessment.where("person_profile_id").equals(merge?.id || "").first();
+        setAssessment(assessment)
+
+        if (!assessment) {
+            toast({
+                variant: "destructive",
+                title: "Assessment not found",
+                description: "Please create an assessment first",
+            });
+        }
     }
 
 
@@ -234,7 +249,7 @@ export default function PayrollUser() {
 
                     </div>
 
-                    {session?.userData.role == "Guest" && (
+                    {["Guest", "CFW Beneficiary"].includes(session?.userData.role!) && (
                         <>
                             <div className="my-10 grid grid-cols-2 gap-2 text-center">
                                 <div>
@@ -272,7 +287,7 @@ export default function PayrollUser() {
                                 <span>Daily Time Record</span>
                                 <span className='flex items-center'>
                                     <Tooltip>
-                                        <TooltipTrigger  asChild className="flex items-center">
+                                        <TooltipTrigger asChild className="flex items-center">
                                             <CheckCircle className='h-7 w-7 mr-1 text-green-500' />
                                         </TooltipTrigger>
                                         <TooltipContent>
@@ -295,7 +310,7 @@ export default function PayrollUser() {
                         </AccordionContent>
                     </AccordionItem>
                     <AccordionItem value="item-2">
-                        <AccordionTrigger  className='font-bold'>
+                        <AccordionTrigger className='font-bold'>
                             <div className='flex justify-between items-center w-full mx-2'>
                                 <span>Accomplishment Report </span>
                                 <span className='flex items-center'>
@@ -313,11 +328,14 @@ export default function PayrollUser() {
                         <AccordionContent>
                             <Card className='p-4'>
                                 <AccomplishmentUser
+                                    assessment={assessment!}
                                     disabled={true}
                                     user={user}
                                     date={{ from: period_cover_from, to: period_cover_to }}
                                     session={session}
                                     accomplishmentReportId={bene?.accomplishment_report_id || ""}
+
+
                                 />
                             </Card>
                         </AccordionContent>

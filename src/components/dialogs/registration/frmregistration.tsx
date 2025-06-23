@@ -16,7 +16,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { redirect, useRouter } from "next/navigation"
 import { dexieDb } from "@/db/offline/Dexie/databases/dexieDb"
 import { useOnlineStatus } from "@/hooks/use-network"
-import UsersService from "./UsersService"
+import UsersService from "../../services/UsersService"
 import { datetime } from "drizzle-orm/mysql-core"
 import React, { useState } from "react"
 
@@ -65,20 +65,27 @@ export default function RegistrationForm({ className, ...props }: React.Componen
       })
       return;
     }
-
+    debugger
     const _id = uuidv4();
+    console.log("🔑User ID generated is", _id)
     console.log('_permission', _id)
     const salt = crypto.getRandomValues(new Uint8Array(16)); // Generate a random salt
     console.log('salt', salt)
     console.log('data', data)
     const hashedPassword: string = await hashPassword(data.password, salt);
     console.log('hashedPassword', hashedPassword)
+
+    const saltObject: Record<string, number> = salt.reduce((acc, val, idx) => {
+      acc[idx] = val;
+      return acc;
+    }, {} as Record<string, number>);
+
     const formUser: IUser = {
       id: _id,
       username: data.username,
       email: data.email.toLowerCase(),
       password: hashedPassword,
-      salt: salt,
+      salt: saltObject, //salt,
       role_id: _role[0].id,
       created_date: new Date().toISOString(),
       created_by: _id,

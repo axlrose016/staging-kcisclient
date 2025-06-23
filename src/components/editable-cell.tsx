@@ -1,12 +1,14 @@
 "use client";
 
-import React, { ReactNode, useMemo } from 'react';
+import React, { ReactNode, useMemo, useState, useEffect, useCallback } from 'react';
 import { TableCell } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
-import debounce from "lodash.debounce"; 
+import debounce from "lodash.debounce";
 import Editor from './editor';
- 
+
 interface EditableCellProps {
+    beforeInput?: ReactNode;
+    id?: string
     disabled?: boolean;
     placeholder?: string;
     value: string;
@@ -14,37 +16,30 @@ interface EditableCellProps {
     className?: string;
     element?: ReactNode;
 }
- 
-export const EditableCell: React.FC<EditableCellProps> = ({ 
-    disabled = false, 
-    value, 
-    onDebouncedChange, 
+
+export const EditableCell: React.FC<EditableCellProps> = ({
+    beforeInput,
+    id,
+    disabled = false,
+    value,
+    onDebouncedChange,
     className = cn(
         "align-top border-r w-full h-full bg-blue-100/40 ring-0",
         "focus:outline-none focus:ring-1"
-    ), 
-    placeholder = "", 
-    element 
+    ),
+    placeholder = "",
+    element
 }) => {
-    const debouncedChange = useMemo(
-        () =>
-            debounce((text: string) => {
-                onDebouncedChange(text);
-            }, 900),
-        [onDebouncedChange]
-    );
 
-    const handleChange = (content: string) => {
-        debouncedChange(content);
-    };
 
     return (
-        <TableCell className={className} style={{padding: '0 !importants'}}>
-            <div className='flex items-center'>
+        <TableCell id={id} className={className} style={{ padding: '0 !importants' }}>
+            {beforeInput}
+            <div className='flex items-center gap-2'>
                 <div className='flex-1'>
-                    <Editor 
-                        value={value} 
-                        onChange={handleChange}
+                    <Editor
+                        value={value}
+                        onChange={onDebouncedChange}
                         disabled={disabled}
                         placeholder={placeholder}
                     />

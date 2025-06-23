@@ -5,7 +5,7 @@ import LoadingScreen from "@/components/general/loading-screen";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
 import React from "react"
-import { SettingsService } from "../SettingsService";
+import { SettingsService } from "../../../../components/services/SettingsService";
 import { IUser } from "@/components/interfaces/iuser";
 import { PushStatusBadge } from "@/components/general/push-status-badge";
 import { dexieDb } from "@/db/offline/Dexie/databases/dexieDb";

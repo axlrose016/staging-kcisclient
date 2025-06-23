@@ -6,13 +6,13 @@ export const syncTask: IBulkSync[] = [
   {
     tag: "Person Profile",
     url: process.env.NEXT_PUBLIC_API_BASE_URL_KCIS + `person_profile/create/`,
-    module: await dexieDb.person_profile,
+    module: () => dexieDb.person_profile,
     force: true,
   },
   {
     tag: "Person Profile > CFW attendance log",
     url: process.env.NEXT_PUBLIC_API_BASE_URL_KCIS + `cfwtimelogs/create/`,
-    module: await dexieDb.cfwtimelogs,
+    module: () => dexieDb.cfwtimelogs,
     force: true,
   },
   {
@@ -20,7 +20,7 @@ export const syncTask: IBulkSync[] = [
     url:
       process.env.NEXT_PUBLIC_API_BASE_URL_KCIS +
       `person_profile_disability/create/`,
-    module: await dexieDb.person_profile_disability,
+    module: () => dexieDb.person_profile_disability,
     force: true,
   },
   {
@@ -28,7 +28,7 @@ export const syncTask: IBulkSync[] = [
     url:
       process.env.NEXT_PUBLIC_API_BASE_URL_KCIS +
       `person_profile_family_composition/create/`,
-    module: await dexieDb.person_profile_family_composition,
+    module: () => dexieDb.person_profile_family_composition,
     force: true,
   },
   {
@@ -36,7 +36,7 @@ export const syncTask: IBulkSync[] = [
     url:
       process.env.NEXT_PUBLIC_API_BASE_URL_KCIS +
       `person_profile_sector/create/`,
-    module: await dexieDb.person_profile_sector,
+    module: () => dexieDb.person_profile_sector,
     force: true,
   },
   {
@@ -44,20 +44,25 @@ export const syncTask: IBulkSync[] = [
     url:
       process.env.NEXT_PUBLIC_API_BASE_URL_KCIS +
       `person_profile_engagement_history/create/`,
-    module: await dexieDb.person_profile_cfw_fam_program_details,
+    module: () => dexieDb.person_profile_cfw_fam_program_details,
     force: true,
   },
   {
     tag: "Person Profile > attachments",
     url: process.env.NEXT_PUBLIC_API_BASE_URL_KCIS + `attachments/create/`,
-    module: await dexieDb.attachments,
+    module: () => dexieDb.attachments,
     force: true,
     formdata: (record) => {
       console.log("Person Profile > attachments > record", record);
-      return {
-        [`${record.record_id}##${record.file_id}##${record.module_path}##${record.user_id == "" ? record.record_id : record.user_id}##${record.created_by == "" ? "error" : record.created_by}##${record.created_date}##${record.remarks}##${record.file_type}`]:
-          record.file_path, // should be a File or Blob
-      };
+      if (!(record.file_path instanceof Blob) && record.file_path) {
+        // Skip this record by returning empty object, it will be counted as success
+        return {};
+      } else {
+        return {
+          [`${record.id}##${record.record_id}##${record.file_id}##${record.module_path}##${record.user_id == "" ? record.record_id : record.user_id}##${record.created_by == "" ? "error" : record.created_by}##${record.created_date}##${record.remarks}##${record.file_type}`]:
+            record.file_path, // should be a File or Blob
+        };
+      }
     },
     onSyncRecordResult: (record, result) => {
       if (result.success) {
@@ -88,7 +93,7 @@ export const syncTask: IBulkSync[] = [
     url:
       process.env.NEXT_PUBLIC_API_BASE_URL_KCIS +
       `accomplishment_report/create/`,
-    module: await dexieDb.accomplishment_report,
+    module: () => dexieDb.accomplishment_report,
     force: true,
   },
   {
@@ -96,19 +101,19 @@ export const syncTask: IBulkSync[] = [
     url:
       process.env.NEXT_PUBLIC_API_BASE_URL_KCIS +
       `accomplishment_report_task/create/`,
-    module: await dexieDb.accomplishment_actual_task,
+    module: () => dexieDb.accomplishment_actual_task,
     force: true,
   },
   {
     tag: "CFW Immediate Supervisor > Work Plan",
     url: process.env.NEXT_PUBLIC_API_BASE_URL_KCIS + `work_plan/create/`,
-    module: await dexieDb.work_plan,
+    module: () => dexieDb.work_plan,
     force: true,
   },
   {
     tag: "CFW Immediate Supervisor > Work Plan Tasks",
     url: process.env.NEXT_PUBLIC_API_BASE_URL_KCIS + `work_plan_task/create/`,
-    module: await dexieDb.work_plan_tasks,
+    module: () => dexieDb.work_plan_tasks,
     force: true,
   },
   {
@@ -116,7 +121,31 @@ export const syncTask: IBulkSync[] = [
     url:
       process.env.NEXT_PUBLIC_API_BASE_URL_KCIS +
       `cfw_assessment/update/`,
-    module: await dexieDb.cfwassessment,
+    module: () => dexieDb.cfwassessment,
     force: true,
   },
+  {
+    tag: "Submission Logs",
+    url:
+      process.env.NEXT_PUBLIC_API_BASE_URL_KCIS +
+      `submission_logs/create/`,
+    module: () => dexieDb.submission_log,
+  },
+  {
+    tag: "CFW Person Profile > Update User Role",
+    url:
+      process.env.NEXT_PUBLIC_API_BASE_URL_KCIS +
+      `/auth_users/update/user_bulk/`,
+    module: () => dexieDb.users,
+    force: true,
+  },
+  {
+    tag: "CFW Person Profile > Update User Access",
+    url:
+      process.env.NEXT_PUBLIC_API_BASE_URL_KCIS +
+      `auth_user_access/update/`,
+    module: () => dexieDb.useraccess,
+    force: true,
+  },
+   
 ];

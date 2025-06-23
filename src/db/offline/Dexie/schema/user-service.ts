@@ -2,7 +2,7 @@ import { EntityTable } from 'dexie';
 import { dexieDb } from '../databases/dexieDb'; // Assuming dexieDb is properly initialized elsewhere
 import { ICFWSchedules, ICFWTimeLogs, IUser, IUserAccess, IUserData, IUserDataAccess } from '@/components/interfaces/iuser';
 import { toast } from '@/hooks/use-toast';
-import { hashPassword } from '@/lib/utils';
+import { encryptJson, encryptJsonAsync, hashPassword } from '@/lib/utils';
 import { libDb } from '../databases/libraryDb';
 
 // Ensure you're using a single instance for interacting with the users table
@@ -58,7 +58,7 @@ export async function getUserById(id: string) {
 
 export async function getUserByEmail(email: string) {
     try {
-        return await tblUsers.where("email").equals(email).first();
+        return await tblUsers.where("email").equalsIgnoreCase(email.toLowerCase()).first();
     } catch (error) {
         return null;
     }
@@ -97,14 +97,14 @@ export async function getUserData(id: string): Promise<IUserData | null> {
         if (user == null) {
             return null;
         }
-        const userrole = await dexieDb.roles.where('id').equals(user.role_id).first();
+        const userrole = await libDb.roles.where('id').equals(user.role_id).first();
         const useraccess = await tblUserAccess.where('user_id').equals(id).toArray();
         const userlevel = await libDb.lib_level.where('id').equals(user.level_id ?? 0).first();
         console.log("User Access: ", useraccess);
         const userDataAccess: IUserDataAccess[] = [];
         for (const access of useraccess) {
-            const module = await dexieDb.modules.where('id').equals(access.module_id).first();
-            const permission = await dexieDb.permissions.where('id').equals(access.permission_id).first();
+            const module = await libDb.modules.where('id').equals(access.module_id).first();
+            const permission = await libDb.permissions.where('id').equals(access.permission_id).first();
 
             userDataAccess.push({
                 role: userrole?.role_description,

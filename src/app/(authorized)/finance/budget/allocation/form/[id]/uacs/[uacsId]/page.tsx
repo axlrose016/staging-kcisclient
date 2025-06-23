@@ -15,9 +15,10 @@ import { FormDropDown } from "@/components/forms/form-dropdown"
 import { LibraryOption } from "@/components/interfaces/library-interface"
 import { getOfflineLibAllotmentClass, getOfflineLibComponent, getOfflineLibExpense, getOfflineLibLevel } from "@/components/_dal/offline-options"
 import { dxFetchData } from "@/components/_dal/external-apis/dxcloud"
-import { FinanceService } from "@/app/(authorized)/finance/FinanceService"
+import { FinanceService } from "@/components/services/FinanceService"
 import { IAllocationUacs } from "@/db/offline/Dexie/schema/finance-service"
 import { NumericFormat } from 'react-number-format';
+import { useAlert } from "@/components/general/use-alert"
 
 type FormAllocationUascProps = {
   _id?: string | null;
@@ -44,6 +45,7 @@ type FormValues = z.infer<typeof formSchema>
 const financeService = new FinanceService();
 
 export default function FormAllocationUasc({ _id }: FormAllocationUascProps) {
+  const alert = useAlert()
   const router = useRouter();
   const params = useParams() || undefined; // for dynamic route segments
   const searchParams = useSearchParams();
@@ -113,7 +115,18 @@ export default function FormAllocationUasc({ _id }: FormAllocationUascProps) {
     form.setValue('allocation_id', id);
   }, [id]);
 
-  function onSubmit(data: FormValues) {
+  async function onSubmit(data: FormValues) {
+    if(data.id === "" || data.id === "0"){
+      const hasExist = await financeService.checkDuplicateAllocationUacs(data as IAllocationUacs);
+      if (hasExist) {
+      await alert.info(
+        "Warning",
+        "Uh-oh! An existing allocation uacs with the same details has been found.",
+      )
+        return undefined
+      }
+    }
+
     financeService.saveOfflineAllocationUacs(data).then((response:any) => {
       if (response) {
         router.push(`/${baseUrl}/form/${id}`);

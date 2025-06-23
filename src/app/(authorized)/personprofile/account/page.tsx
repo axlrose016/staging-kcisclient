@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Lock } from "lucide-react";
-import LoginService from "@/app/login/LoginService"
+import LoginService from "@/components/services/LoginService"
 import { getSession } from '@/lib/sessions-client';
 import { SessionPayload } from '@/types/globals';
 import React, { useState } from "react";

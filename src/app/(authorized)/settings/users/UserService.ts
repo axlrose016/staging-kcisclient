@@ -1,6 +1,7 @@
 import { IUser, IUserAccess } from "@/components/interfaces/iuser";
 import { IModules, IPermissions, IRoles } from "@/components/interfaces/library-interface";
 import { dexieDb } from "@/db/offline/Dexie/databases/dexieDb";
+import { libDb } from "@/db/offline/Dexie/databases/libraryDb";
 import { getSession } from "@/lib/sessions-client";
 import { SessionPayload } from "@/types/globals";
 import { v4 as uuidv4 } from 'uuid';
@@ -73,14 +74,14 @@ export class UserService{
     async getOfflineUserAccessByUserId(id: any): Promise<IUserAccess[] | undefined> {
         try {
 
-        const moduleList = await dexieDb.modules.toArray();
+        const moduleList = await libDb.modules.filter(f => f.is_deleted !== true).toArray();
         const moduleMap = new Map(moduleList.map(m => [m.id, m.module_description || ""]));
 
-        const permissionList = await dexieDb.permissions.toArray();
+        const permissionList = await libDb.permissions.filter(f => f.is_deleted !== true).toArray();
         const permissionMap = new Map(permissionList.map(p => [p.id, p.permission_description || ""]));
 
         const userAccess = await dexieDb.transaction('r', [dexieDb.useraccess], async () => {
-            return await dexieDb.useraccess.where('user_id').equals(id).toArray();
+            return await dexieDb.useraccess.where('user_id').equals(id).filter(f => f.is_deleted !== true).toArray();
         });
 
         const result = userAccess.map(ua => ({

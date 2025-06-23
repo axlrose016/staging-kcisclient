@@ -8,12 +8,12 @@ import { Loader2, Pause, RefreshCcwDot, TrendingUpIcon } from "lucide-react";
 import { IPersonProfile, IPersonProfileFamilyComposition, IPersonProfileSector } from "@/components/interfaces/personprofile";
 import { SessionPayload } from "@/types/globals";
 import { getSession } from "@/lib/sessions-client";
-import PersonProfileService from "./(authorized)/personprofile/form/PersonProfileService";
 import clsx from "clsx";
 import { Badge } from "@/components/ui/badge";
 import { dexieDb } from "@/db/offline/Dexie/databases/dexieDb";
 import GeneratePDF from "@/components/pdf/CfwBooklet";
 import { useBulkSyncStore } from "@/lib/state/bulksync-store";
+import PersonProfileService from "@/components/services/PersonProfileService";
 
 
 function StartPage() {

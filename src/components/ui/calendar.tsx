@@ -54,12 +54,12 @@ function Calendar({
         ...classNames,
       }}
       components={{
-        IconLeft: ({ className, ...props }) => (
-          <ChevronLeft className={cn("h-4 w-4", className)} {...props} />
-        ),
-        IconRight: ({ className, ...props }) => (
-          <ChevronRight className={cn("h-4 w-4", className)} {...props} />
-        ),
+        IconLeft: (props) => <ChevronLeft className="h-4 w-4" {...props} />,
+        IconRight: (props) => <ChevronRight className="h-4 w-4" {...props} />,
+        // eslint-disable-next-line react/display-name
+        Button: (props) => {
+          return <button type="button" {...props} />;
+        },
       }}
       {...props}
     />

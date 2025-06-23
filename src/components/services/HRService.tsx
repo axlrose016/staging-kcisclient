@@ -54,7 +54,7 @@ export class HRService {
         const employmentList = await libDb.lib_employment_status.toArray();
         const employmentMap = new Map(employmentList.map((item) => [item.id, item.employment_status_description || ""]));
 
-        const modalityList = await dexieDb.lib_modality.toArray();
+        const modalityList = await libDb.lib_modality.toArray();
         const modalityMap = new Map(modalityList.map((item) => [item.id, item.modality_name || ""]));
 
         return await hrDb.transaction('r', [hrDb.position_item], async () => {
@@ -313,9 +313,9 @@ export class HRService {
       const data = await hrDb.applicant.toArray();
       const resolvedData = await Promise.all(
         data.map(async (item: any) => {
-          const extension_name = await dexieDb.lib_extension_name.get(item.extension_name_id);
-          const sex = await dexieDb.lib_sex.get(item.sex_id);
-          const civil_status = await dexieDb.lib_civil_status.get(item.civil_status_id);
+          const extension_name = await libDb.lib_extension_name.get(item.extension_name_id);
+          const sex = await libDb.lib_sex.get(item.sex_id);
+          const civil_status = await libDb.lib_civil_status.get(item.civil_status_id);
           return {
             ...item,
             extension_name: extension_name ? extension_name.extension_name : null,

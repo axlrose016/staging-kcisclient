@@ -28,12 +28,12 @@ function FinanceConfiguration() {
       </CardFooter>
     </Card>
 
-     <Card
+    <Card
         className="@container/card bg-[hsl(var(--sidebar-background))] transition-all duration-300 hover:shadow-xl hover:ring-2 hover:ring-blue-500/50 hover:scale-[1.02] cursor-pointer"
-        onClick={() => router.push(`/${baseUrl}/paps`)}
+        onClick={() => router.push(`/${baseUrl}/fund-source`)}
       >
       <CardHeader className="relative">
-        <CardDescription>PAP</CardDescription>
+        <CardDescription>Modality</CardDescription>
         <CardTitle className="@[250px]/card:text-3xl text-2xl font-semibold tabular-nums"></CardTitle>
         <div className="absolute right-4 top-4">
           <FileSpreadsheetIcon size={40} className="h-10 w-12 text-muted-foreground mr-2" />
@@ -41,7 +41,25 @@ function FinanceConfiguration() {
       </CardHeader>
       <CardFooter className="flex-col items-start gap-1 text-sm">
         <div className="line-clamp-1 flex gap-2 font-medium">
-          List of All PAP
+          List of All Fund Source
+        </div>
+      </CardFooter>
+    </Card>
+
+     <Card
+        className="@container/card bg-[hsl(var(--sidebar-background))] transition-all duration-300 hover:shadow-xl hover:ring-2 hover:ring-blue-500/50 hover:scale-[1.02] cursor-pointer"
+        onClick={() => router.push(`/${baseUrl}/modality`)}
+      >
+      <CardHeader className="relative">
+        <CardDescription>Modality</CardDescription>
+        <CardTitle className="@[250px]/card:text-3xl text-2xl font-semibold tabular-nums"></CardTitle>
+        <div className="absolute right-4 top-4">
+          <FileSpreadsheetIcon size={40} className="h-10 w-12 text-muted-foreground mr-2" />
+        </div>
+      </CardHeader>
+      <CardFooter className="flex-col items-start gap-1 text-sm">
+        <div className="line-clamp-1 flex gap-2 font-medium">
+          List of All Modality
         </div>
       </CardFooter>
     </Card>

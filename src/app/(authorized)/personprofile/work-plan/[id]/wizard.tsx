@@ -17,11 +17,12 @@ import { getSession } from '@/lib/sessions-client'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { v4 as uuidv4 } from 'uuid';
-import LoginService from "@/app/login/LoginService";
+import LoginService from "@/components/services/LoginService";
 import { dexieDb } from "@/db/offline/Dexie/databases/dexieDb"
 import { ICFWAssessment, IWorkPlan, IWorkPlanTasks } from "@/components/interfaces/personprofile"
-import { useRouter } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import { cleanArray, cn } from "@/lib/utils";
+import { getParsedLocalStorage } from "@/components/utils/utils";
 // checklist
 // deployment_area_short_name_supervisor ✅
 // deployment_area_supervisor ✅
@@ -90,20 +91,12 @@ type WizardProps = {
 
 }
 
-// type WorkPlanTasksCollected = {
-//     id: string;
-//     work_plan_id: string;
-//     expected_output: string;
-//     work_plan_category_id: string; // "General" or "Specific"
-//     activities_tasks: string;
-//     timeline_from: string;
-//     timeline_to: string;
-//     assigned_person_id: string;
 
-//     // assigned_person_name: string;
 
-// };
 export default function Wizard({ title, description, beneficiariesData, workPlanDetails, workPlanTasks, noOfSelectedBeneficiaries, noOfTasks, deploymentAreaName, mode }: WizardProps) {
+    const params = useParams();
+    const id = params?.id as string;
+
     const [formMode, setFormMode] = useState(mode)
 
     const [currentStep, setCurrentStep] = useState(0)
@@ -112,7 +105,11 @@ export default function Wizard({ title, description, beneficiariesData, workPlan
 
     const [deploymentAreaNameSup, setDeploymentAreaNameSup] = useState(deploymentAreaName)
     const [workPlanTitle, setWorkPlanTitle] = useState<string>("")
-    const [selectedBeneficiaries, setSelectedBeneficiaries] = useState<any[]>(beneficiariesData || []);
+    const [selectedBeneficiaries, setSelectedBeneficiaries] = useState<any[]>(
+        (beneficiariesData || []).filter(
+            (b) => b?.full_name?.trim() !== ""
+        )
+    );
     // const [workPlanData, setWorkPlanData] = useState<any>(workPlanDetails || {});
     const [workPlanData, setWorkPlanData] = useState(() => {
         if (typeof window !== "undefined") {
@@ -134,7 +131,9 @@ export default function Wizard({ title, description, beneficiariesData, workPlan
     //     "DEPLOYMENT AREA": "Department of Social Welfare and Development - National Program Management Office",
     //     "COURSE": "BACHELOR OF SCIENCE IN ACCOUNTANCY"
     // }
-
+    useEffect(() => {
+        localStorage.setItem("current_work_plan_id", id)
+    }, [id])
 
     const steps = [
         {
@@ -168,6 +167,7 @@ export default function Wizard({ title, description, beneficiariesData, workPlan
             component: <SubmittedStep />,
         },
     ]
+
     function totalNumberOfSelectedBenes() {
         const lsSB = localStorage.getItem("selectedBeneficiaries");
         if (lsSB) {
@@ -178,56 +178,50 @@ export default function Wizard({ title, description, beneficiariesData, workPlan
     }
 
     const saveWorkPlanToDexieDb = async (workplanid: string) => {
-        const lsWP = localStorage.getItem("work_plan")
-        if (lsWP) {
-            const parsedWP = JSON.parse(lsWP)
 
-            const { immediate_supervisor_id, work_plan_title } = parsedWP;
-            // Specify only the fields you want to save
-            // parsedWP is expected to be an object, not an array
-            const existing = await dexieDb.work_plan
-                .where('immediate_supervisor_id')
-                .equals(parsedWP.immediate_supervisor_id)
-                .filter(wp => wp.work_plan_title === parsedWP.work_plan_title)
-                .first();
+        const lsWP = localStorage.getItem("work_plan");
 
+        if (!lsWP) {
+            console.warn("⚠️ No work_plan found in localStorage.");
+            return;
+        }
 
-            const workPlanToSave = {
-                id: existing?.id || workplanid, // reuse ID if updating
-                work_plan_title,
-                immediate_supervisor_id,
-                office_name: parsedWP.office_name,
-                objectives: parsedWP.objectives,
-                no_of_days_program_engagement: parsedWP.no_of_days_program_engagement,
-                approved_work_schedule_from: parsedWP.approved_work_schedule_from,
-                approved_work_schedule_to: parsedWP.approved_work_schedule_to,
-                remarks: existing ? "Work Plan updated in DexieDB" : "Work Plan created in DexieDB",
-                status_id: 0,
-                created_date: existing?.created_date || new Date().toISOString(),
-                created_by: _session?.userData?.email ?? "",
+        const parsedWP = JSON.parse(lsWP);
+
+        await dexieDb.transaction("rw", dexieDb.work_plan, async () => {
+            const existing = await dexieDb.work_plan.get(workplanid);
+
+            if (!existing) {
+                console.warn("❌ Work plan not found in Dexie, can't update.");
+                return;
+            }
+
+            // Only override specific fields from localStorage
+            const updatedWorkPlan = {
+                ...existing,
+                work_plan_title: parsedWP.work_plan_title ?? existing.work_plan_title,
+                immediate_supervisor_id: parsedWP.immediate_supervisor_id ?? existing.immediate_supervisor_id,
+                // deployment_area_name: parsedWP.deployment_area_name ?? existing.deployment_area_name,
+                office_name: parsedWP.office_name ?? existing.office_name,
+                no_of_days_program_engagement: parsedWP.no_of_days_program_engagement ?? existing.no_of_days_program_engagement,
+                approved_work_schedule_from: parsedWP.approved_work_schedule_from ?? existing.approved_work_schedule_from,
+                approved_work_schedule_to: parsedWP.approved_work_schedule_to ?? existing.approved_work_schedule_to,
+                objectives: parsedWP.objectives ?? existing.objectives,
                 last_modified_date: new Date().toISOString(),
-                last_modified_by: _session?.userData?.email ?? "",
-                push_status_id: 2,
+                last_modified_by: _session?.userData?.email ?? existing.last_modified_by,
                 push_date: new Date().toISOString(),
-                deleted_date: null,
-                deleted_by: null,
-                is_deleted: false,
-                alternate_supervisor_id: null,
-                area_focal_person_id: null,
-                total_number_of_bene: totalNumberOfSelectedBenes(),
+                push_status_id: 2,
+                status_id: 0,
+                remarks: "Work Plan has been synch upon submission",
             };
 
-            const wpres = await dexieDb.work_plan.put(workPlanToSave)
-            // await dexieDb.work_plan.clear();
-            // const data = await wpres.json()
-            console.log("🧔 work plan created", wpres);
-
-            return
+            // await dexieDb.work_plan.put(updatedWorkPlan);
+            debugger
             const email = "dsentico@dswd.gov.ph";
             const password = "Dswd@123";
             const onlinePayload = await LoginService.onlineLogin(email, password);
             const token = onlinePayload.token;
-            const workPlanCreate = await fetch(
+            await fetch(
                 `${process.env.NEXT_PUBLIC_API_BASE_URL_KCIS}work_plan/create/`,
                 {
                     method: "POST",
@@ -235,46 +229,90 @@ export default function Wizard({ title, description, beneficiariesData, workPlan
                         Authorization: `bearer ${token}`,
                         "Content-Type": "application/json",
                     },
-                    body: JSON.stringify([{
-                        "id": workplanid,
-                        "created_by": _session.userData?.email,
-                        "remarks": "Work Plan Created",
-                        "work_plan_title": workPlanData.work_plan_title,
-                        "immediate_supervisor_id": _session.id,
-                        "objectives": workPlanData.objectives,
-                        "no_of_days_program_engagement": workPlanData.no_of_days_program_engagement,
-                        "approved_work_schedule_from": workPlanData.approved_work_schedule_from,
-                        "approved_work_schedule_to": workPlanData.approved_work_schedule_to,
-                        "push_status_id": 2,
-                        "created_date": new Date().toISOString(),
+                    body: JSON.stringify([updatedWorkPlan]),
 
-
-                    }]),
                 }
             );
+            await dexieDb.work_plan.put(updatedWorkPlan);
 
-            if (!workPlanCreate.ok) {
-                const errormsg = await workPlanCreate.json();
-                const errorBody = await workPlanCreate.text(); // safer than .json() in case of non-JSON error
-                console.error("❌ Failed to create work plan:", errorBody);
 
-                // alert("Work Plan creation failed because ", errormsg.te);
-                return;
-            }
-            const result = await workPlanCreate.json();
-            console.error("❌ Failed to create work plan:", result);
+            console.log("📝 Saving work plan:", updatedWorkPlan);
+            console.log("✅ Work plan updated in Dexie:", updatedWorkPlan);
+        });
 
-            // save the task details
+        // const lsWP = localStorage.getItem("work_plan")
+        // if (!lsWP) return
+        // debugger
+        // const parsedWP = JSON.parse(lsWP)
+        // await dexieDb.transaction("rw", dexieDb.work_plan, async () => {
+        //     const existing = await dexieDb.work_plan.get(workplanid);
 
-            // save benes
+        //     if (!existing) {
+        //         console.warn("❌ Work plan not found in Dexie, can't update.");
+        //         return;
+        //     }
 
-            // const personData = await workPlanCreate.json();
-            console.log("🧔 work plan created", result);
-            alert("Work Plan Created Successfully");
-        }
+        //     console.log("📦 Existing WP:", existing);
+        //     console.log("📦 Parsed WP from localStorage:", parsedWP);
+
+        //     const workPlanToSave = {
+        //         ...existing,
+        //         id: workplanid,
+        //         approved_work_schedule_from: parsedWP.hasOwnProperty("approved_work_schedule_from")
+        //             ? parsedWP.approved_work_schedule_from
+        //             : existing.approved_work_schedule_from,
+        //         approved_work_schedule_to: parsedWP.hasOwnProperty("approved_work_schedule_to")
+        //             ? parsedWP.approved_work_schedule_to
+        //             : existing.approved_work_schedule_to,
+        //         created_by: _session?.userData?.email ?? existing.created_by,
+        //         last_modified_by: _session?.userData?.email ?? existing.last_modified_by,
+        //         last_modified_date: new Date().toISOString(),
+        //         no_of_days_program_engagement: parsedWP.hasOwnProperty("no_of_days_program_engagement")
+        //             ? parsedWP.no_of_days_program_engagement
+        //             : existing.no_of_days_program_engagement,
+        //         objectives: parsedWP.hasOwnProperty("objectives")
+        //             ? parsedWP.objectives
+        //             : existing.objectives,
+        //         office_name: parsedWP.hasOwnProperty("office_name")
+        //             ? parsedWP.office_name
+        //             : existing.office_name,
+        //         push_date: new Date().toISOString(),
+        //         push_status_id: 2,
+        //         remarks: "Work Plan updated in DexieDB",
+        //         status_id: 0,
+        //         work_plan_title: parsedWP.hasOwnProperty("work_plan_title")
+        //             ? parsedWP.work_plan_title
+        //             : existing.work_plan_title,
+        //     };
+
+        //     debugger
+        //     const email = "dsentico@dswd.gov.ph";
+        //     const password = "Dswd@123";
+        //     const onlinePayload = await LoginService.onlineLogin(email, password);
+        //     const token = onlinePayload.token;
+        //     await dexieDb.work_plan.put(workPlanToSave);
+        //     await fetch(
+        //         `${process.env.NEXT_PUBLIC_API_BASE_URL_KCIS}work_plan/create/`,
+        //         {
+        //             method: "POST",
+        //             headers: {
+        //                 Authorization: `bearer ${token}`,
+        //                 "Content-Type": "application/json",
+        //             },
+        //             body: JSON.stringify([workPlanToSave]),
+
+        //         }
+        //     );
+
+
+        //     console.log("📝 Saving work plan:", workPlanToSave);
+
+        // });
+
     }
+
     const saveWorkPlanTasksToDexieDb = async (workplanid: string) => {
-        debugger
+        // debugger
         const workPlanTasksLS = localStorage.getItem("work_plan_tasks");
         if (workPlanTasksLS) {
 
@@ -309,224 +347,128 @@ export default function Wizard({ title, description, beneficiariesData, workPlan
             // await db.tasks.bulkPut(collectedTasks);
             // await dexieDb.work_plan_tasks.clear();
             await dexieDb.work_plan_tasks.bulkPut(collectedTasks)
-            // const email = "dsentico@dswd.gov.ph";
-            // const password = "Dswd@123";
-            // const onlinePayload = await LoginService.onlineLogin(email, password);
-            // const token = onlinePayload.token;
-            // debugger
-            // await fetch(
-            //     `${process.env.NEXT_PUBLIC_API_BASE_URL_KCIS}work_plan_task/create/`,
-            //     {
-            //         method: "POST",
-            //         headers: {
-            //             Authorization: `bearer ${token}`,
-            //             "Content-Type": "application/json",
-            //         },
-            //         body: JSON.stringify(
-            //             collectedTasks.map(ct => ({
-            //                 id: uuidv4(),
-            //                 work_plan_id: workplanid,
-            //                 work_plan_category_id: ct.work_plan_category_id,
-            //                 activities_tasks: ct.activities_tasks,
-            //                 expected_output: ct.expected_output,
-            //                 timeline_from: ct.timeline_from,
-            //                 timeline_to: ct.timeline_to,
-            //                 assigned_person_id: ct.assigned_person_id === "all" ? null : ct.assigned_person_id,
-            //                 created_date: new Date().toISOString(),
-            //                 created_by: _session.userData?.email,
-            //                 last_modified_date: null,
-            //                 last_modified_by: null,
-            //                 deleted_date: null,
-            //                 deleted_by: null,
-            //                 remarks: "Work Plan Task Created",
-            //                 is_deleted: false,
-            //                 status_id: 0,
-            //                 push_status_id: 2,
-            //                 push_date: new Date().toISOString(),
-            //             }))
-            //         ),
-            //     }
-            // );
+            const email = "dsentico@dswd.gov.ph";
+            const password = "Dswd@123";
+            const onlinePayload = await LoginService.onlineLogin(email, password);
+            const token = onlinePayload.token;
+            debugger
+            await fetch(
+                `${process.env.NEXT_PUBLIC_API_BASE_URL_KCIS}work_plan_task/create/`,
+                {
+                    method: "POST",
+                    headers: {
+                        Authorization: `bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(
+                        collectedTasks.map(ct => ({
+                            id: uuidv4(),
+                            work_plan_id: workplanid,
+                            work_plan_category_id: ct.work_plan_category_id,
+                            activities_tasks: ct.activities_tasks,
+                            expected_output: ct.expected_output,
+                            timeline_from: ct.timeline_from,
+                            timeline_to: ct.timeline_to,
+                            assigned_person_id: ct.assigned_person_id === "all" ? null : ct.assigned_person_id,
+                            created_date: new Date().toISOString(),
+                            created_by: _session.userData?.email,
+                            last_modified_date: null,
+                            last_modified_by: null,
+                            deleted_date: null,
+                            deleted_by: null,
+                            remarks: "Work Plan Task Created",
+                            is_deleted: false,
+                            status_id: 0,
+                            push_status_id: 2,
+                            push_date: new Date().toISOString(),
+                        }))
+                    ),
+                }
+            );
             console.log("All tasks saved successfully.");
 
         }
     }
 
     const saveWorkPlanSelectedBenes = async (workplanid: string) => {
-        debugger
+        // debugger
         const workPlanSelectedBenes = localStorage.getItem("selectedBeneficiaries");
         if (workPlanSelectedBenes) {
             const email = "dsentico@dswd.gov.ph";
             const password = "Dswd@123";
-            const onlinePayload = await LoginService.onlineLogin(email, password);
-            const token = onlinePayload.token;
-            debugger
-            const parsedWPSB = JSON.parse(workPlanSelectedBenes)
-            // get the bene data from api
-            // save it to dexiedb
-            // update the data immediate_supervisor_id, division_office_name, work_plan_id
-            // /cfw_assessment/view/01f98bb8-8d91-4416-8e6d-3a35decf39ab/
-            localStorage.removeItem("selected_benes_cfw_assessment")
 
-            const lsWP = localStorage.getItem("work_plan")
-            let newImmediateSupervisorId = ""
-            let newDivisionOfficeName = "";
-            let newRemarks = "Bene has been tagged in Work Plan";
-            let number_of_days_program_engagement = ""
-            if (lsWP) {
-                const parsedWP = JSON.parse(lsWP)
-                newImmediateSupervisorId = parsedWP.immediate_supervisor_id
-                newDivisionOfficeName = parsedWP.office_name
-                number_of_days_program_engagement = parsedWP.no_of_days_program_engagement
-            }
+            try {
+                const onlinePayload = await LoginService.onlineLogin(email, password);
+                const token = onlinePayload.token;
 
-            const newWorkPlanId = workplanid;
-            const resultsArray: any[] = [];
-            await Promise.all(
-                parsedWPSB.map(async (sb: any) => {
-                    try {
-                        const res = await fetch(
-                            `${process.env.NEXT_PUBLIC_API_BASE_URL_KCIS}cfw_assessment/view/${sb.ID}/`,
-                            {
-                                method: "GET",
+                const WP = localStorage.getItem("work_plan");
+
+                if (WP) {
+                    const parsedWP = JSON.parse(WP);
+                    const parsedWPSB = JSON.parse(workPlanSelectedBenes);
+
+                    const payloads = parsedWPSB.map((sb: any) => ({
+                        person_profile_id: sb.person_profile_id || sb.ID,
+                        last_modified_date: new Date().toISOString(),
+                        last_modified_by: _session.userData.email,
+                        remarks: "Bene has been tagged in Work Plan",
+                        division_office_name: parsedWP.office_name,
+                        number_of_days_program_engagement: parsedWP.no_of_days_program_engagement,
+                        immediate_supervisor_id: parsedWP.immediate_supervisor_id,
+                        work_plan_id: parsedWP.id,
+                        push_date: new Date().toISOString(),
+                    }));
+
+                    // 🔁 Loop with `for...of` to await each request
+                    for (const payload of payloads) {
+                        try {
+                            const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL_KCIS}cfw_assessment/update/`, {
+                                method: "POST",
                                 headers: {
-                                    Authorization: `bearer ${token}`,
+                                    Authorization: `bearer ${token}`, // Capital B
                                     "Content-Type": "application/json",
                                 },
+                                body: JSON.stringify([payload]), // still sent as an array
+                            });
+
+                            if (!res.ok) {
+                                console.error(`❌ Failed to push person_profile_id ${payload.person_profile_id || payload.ID}`);
+                            } else {
+                                console.log(`✅ Synced person_profile_id ${payload.person_profile_id || payload.ID}`);
                             }
-                        );
-
-                        if (!res.ok) {
-                            console.error(`Failed to fetch data for ID ${sb.ID}`);
-                            return;
+                        } catch (err) {
+                            console.error("❌ Error syncing bene:", err);
                         }
-
-
-                        // "division_office_name": "Compliance",
-                        // "immediate_supervisor_id": "02af6e24-1bec-4568-b9bf-8133e7faa3dc",
-                        // "last_modified_by": null,
-                        // last_modified_date //✨ pls add
-                        // "number_of_days_program_engagement": null,
-
-                        // "area_focal_person_id": null, 
-                        // "assessment": null, 
-                        // "cfw_category_id": null, 
-                        // "created_by": "server",
-                        // "deleted_by": null,
-                        // "deleted date": null,
-                        // "deployment_area_category_id": 1,
-                        // "deployment_area_id": 21,
-                        // "division_office_name": "Compliance",
-                        // id //✨ pls add
-                        // "immediate_supervisor_id": "02af6e24-1bec-4568-b9bf-8133e7faa3dc",
-                        // "is_deleted": null,
-                        // "last_modified_by": null,
-                        // last_modified_date //✨ pls add
-                        // log type ❌
-                        // "number_of_days_program_engagement": null,
-                        // "person_profile_id": "951128ca-6295-4ba6-9562-30e59b7cfc6a",
-                        // "push_date": null
-                        // "push_status_id": null,
-                        // raw_id❌
-                        // "remarks": "Bene tagged in Work Plan",
-                        // "status_id": 1,
-                        // user_id //✨ pls add
-                        // created_date //✨ pls add
-                        // "work_plan_id": "59ee36fa-a194-4f63-88e9-c7f74b210cc4",
-                        // alternate_supervisor_id//✨ pls add
-
-
-                        const result = await res.json();
-                        // ✅ Inject new values here
-                        const modifiedResult = {
-                            ...result,
-                            id: uuidv4(),
-                            immediate_supervisor_id: newImmediateSupervisorId,
-                            division_office_name: newDivisionOfficeName,
-                            work_plan_id: workplanid,
-                            remarks: newRemarks,
-                            push_status_id: 2,
-                            push_date: new Date().toISOString(),
-                            last_modified_by: _session.userData.email,
-                            last_modified_date: new Date().toISOString(),
-                            number_of_days_program_engagement: number_of_days_program_engagement
-
-                        };
-
-                        resultsArray.push(modifiedResult);
-
-                    } catch (err) {
-                        console.error(`Error fetching ID ${sb.ID}:`, err);
                     }
-                })
-            );
-
-            // Save all results at once
-            localStorage.setItem("selected_benes_cfw_assessment", JSON.stringify(resultsArray));
-
-
-            const localData = localStorage.getItem("selected_benes_cfw_assessment");
-            if (!localData) {
-                console.error("No data found in localStorage for selected_benes_cfw_assessment");
-                return;
+                }
+            } catch (err) {
+                console.error("❌ Login failed or other error:", err);
             }
-            const parsedData = JSON.parse(localData);
-
-
-            await dexieDb.cfwassessment.bulkPut(parsedData);
-            console.log("cfw_assessment updated in Dexie successfully.");
-            console.log("All tasks saved successfully.");
-            // const parsed = JSON.parse(workPlanSelectedBenes);
-            // await dexieDb.transaction("rw", [dexieDb.cfwassessment], async () => {
-            //     try {
-            //         let data: ICFWAssessment = cfwassessment;
-            //         if(cfwass)
-
-            //     }
-            //     catch (e) {
-            //         console.log(e)
-            //     }
-            // })
-
-            // const collectedSelectedBene: ICFWAssessment[] = Array.isArray(parsed)
-            //     ? parsed.map((item: any) => ({
-            //         id: uuidv4(),
-            //         person_profile_id: item.ID,
-            //         deployment_area_category_id: null,
-            //         deployment_area_id: null,
-            //         division_office_name: null,
-            //         assessment: null,
-            //         number_of_days_program_engagement: null,
-            //         area_focal_person_id: null,
-            //         immediate_supervisor_id: null,
-            //         alternate_supervisor_id: null,
-            //         cfw_category_id: null,
-            //         work_plan_id: workplanid,
-            //         status_id: null,
-            //         user_id: null,
-            //         created_date: null,
-            //         created_by: null,
-            //         last_modified_date: null,
-            //         last_modified_by: null,
-            //         push_status_id: null,
-            //         push_date: null,
-            //         deleted_date: null,
-            //         deleted_by: null,
-            //         is_deleted: null,
-            //         remarks: null,
-            //     }))
-            //     : [];
-
-            // // await db.tasks.bulkPut(collectedTasks);
-            // await dexieDb.cfwassessment.bulkPut(collectedSelectedBene)
         }
     }
 
     const submitWorkPlanWPTaskSelectedBenes = async () => {
-        let workplanid = uuidv4()
+        let workplanid = ""
+        const ls = localStorage.getItem("work_plan")
+        if (ls) {
+            const pLS = JSON.parse(ls)
+            workplanid = pLS.id
+        }
+        // if (!params || !params.id) return; // 🚫 guard clause
+
+        // const id = Array.isArray(params.id) ? params.id[0] : params.id;
+        // if (id == "new") {
+        //     workplanid = uuidv4()
+        //     // localStorage.removeItem("selectedBeneficiaries")
+        //     // return
+        // } else {
+        //     workplanid = id
+        // }
+        // let workplanid = uuidv4()
         saveWorkPlanToDexieDb(workplanid)
         saveWorkPlanTasksToDexieDb(workplanid)
         saveWorkPlanSelectedBenes(workplanid)
+        return
         const timer = setTimeout(() => {
             router.push("/personprofile/work-plan"); // Relative path
             // or use full URL: router.push("http://localhost:3000/personprofile/work-plan");
@@ -778,7 +720,7 @@ export default function Wizard({ title, description, beneficiariesData, workPlan
     // }, [workPlanData]);
 
     useEffect(() => {
-        debugger;
+        // debugger;
 
         console.log("Work Plan: ", workPlanData);
         console.log("Work Plan type: ", typeof workPlanData);
@@ -814,6 +756,7 @@ export default function Wizard({ title, description, beneficiariesData, workPlan
         // localStorage.setItem("work_plan_tasks", JSON.stringify(workPlanTasksData));
 
     }, [selectedBeneficiaries, workPlanTasksData, workPlanTitle]);
+
     const nextStep = () => {
 
         if (currentStep == 0) {
@@ -844,7 +787,7 @@ export default function Wizard({ title, description, beneficiariesData, workPlan
         }
 
         if (currentStep == 1) {
-            debugger
+            // debugger
             const lsWorkPlanDetails = localStorage.getItem("work_plan")
             let parsedWorkPlanDetails: any = {};
             try {
@@ -871,7 +814,7 @@ export default function Wizard({ title, description, beneficiariesData, workPlan
         }
 
         if (currentStep == 2) {
-            debugger
+            // debugger
             const lsWorkPlanTasks = localStorage.getItem("work_plan_tasks")
             let parsedTasks: WorkPlanTasks[] = [];
             try {
@@ -1009,26 +952,195 @@ export default function Wizard({ title, description, beneficiariesData, workPlan
 function BeneficiariesStep({ beneficiariesData }: WizardProps) {
 
     const [listOfBeneficiaries, setListOfBeneficiaries] = useState<any[]>(beneficiariesData || [])
-    const [selectedBeneficiaries, setSelectedBeneficiaries] = useState<any[]>([])
+    const [selectedBeneficiaries, setSelectedBeneficiaries] = useState<Beneficiary[]>([])
 
 
     useEffect(() => {
-        const selectedBenes = localStorage.getItem("selectedBeneficiaries")
-        if (selectedBenes) {
-            let parsedBenes: any[] = [];
-            try {
-                parsedBenes = JSON.parse(selectedBenes);
-                if (!Array.isArray(parsedBenes)) {
-                    parsedBenes = [];
-                }
-            } catch {
-                parsedBenes = [];
+        const fetchEligibleBenes = async () => {
+            const lsWPDAI = getParsedLocalStorage("work_plan_deployment_area_id")
+            const lsWPDACI = getParsedLocalStorage("work_plan_deployment_area_category_id")
+            const onlinePayload = await LoginService.onlineLogin("dsentico@dswd.gov.ph", "Dswd@123");
+
+            const eligibleBenesResponse = await fetch(
+                `${process.env.NEXT_PUBLIC_API_BASE_URL_KCIS}cfw_assessment/view/cfw_assessment_by_deployment_category/`,
+                {
+                    // const response = await fetch(endpoint, {
+                    method: "POST",
+                    headers: {
+                        Authorization: `bearer ${onlinePayload.token}`,
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        "deployment_area_category_id": lsWPDACI,
+                        "deployment_area_id": lsWPDAI
+                    })
+                });
+
+            if (!eligibleBenesResponse.ok) {
+                const data = await eligibleBenesResponse.json();
+                console.log("Error fetching data:", data);
+            } else {
+                const data = await eligibleBenesResponse.json();
+                console.log("👨‍👩‍👧‍👦Eligible Beneficiaries  from api ", data);
+                // save to local storage
+                // update the cfwassessment from dexiedb
+                // fetch the data from localstorage to apptable
+                // everytime the table clicks, then update the localstorage, apptable, cfwassessment, database
+                localStorage.removeItem("eligible_beneficiaries")
+                localStorage.setItem("eligible_beneficiaries", JSON.stringify(data))
+
+                setListOfBeneficiaries(data); //these are the eligible beneficiaries
             }
-
-            setSelectedBeneficiaries(parsedBenes);
-
         }
-    }, [listOfBeneficiaries])
+        fetchEligibleBenes()
+
+        // get the selectedbenes by supervisorid and work plan id
+        const fetchSelectedBenes = async () => {
+
+            const onlinePayload = await LoginService.onlineLogin("dsentico@dswd.gov.ph", "Dswd@123");
+
+            // const ls = getParsedLocalStorage("current_work_plan_id");
+            const currentId = localStorage.getItem("current_work_plan_id");
+
+            const workPlanId = currentId === "new" ? uuidv4() : currentId;
+
+
+            const workPlanRaw = localStorage.getItem("work_plan")
+            if (workPlanRaw) {
+                const parsedWPRaw = JSON.parse(workPlanRaw)
+                parsedWPRaw.id = workPlanId
+                localStorage.setItem("work_plan", JSON.stringify(parsedWPRaw));
+            }
+            // const workPlanId = ls === "new" ? uuidv4() : ls;
+            // alert(workPlanId)
+            // // Get the existing work_plan object from localStorage
+            // const lswp = getParsedLocalStorage("work_plan");
+
+            // // Only proceed if it's a valid object
+            // if (lswp && typeof lswp === "object" && lswp !== null) {
+            //     lswp.id = workPlanId;
+            //     localStorage.setItem("work_plan", JSON.stringify(lswp)); // ✅ Make sure we stringify
+            // } else {
+            //     console.warn("No valid work_plan object found in localStorage.");
+            // }
+            const selectedBenes = await fetch(
+                `${process.env.NEXT_PUBLIC_API_BASE_URL_KCIS}work_plan/view/by_supervisor_and_work_plan/` + _session.id + "/" + workPlanId + "/",
+                {
+
+                    method: "GET",
+                    headers: {
+                        Authorization: `bearer ${onlinePayload.token}`,
+                        "Content-Type": "application/json",
+                    },
+
+                });
+
+            if (!selectedBenes.ok) {
+                const data = await selectedBenes.json();
+                console.log("Error fetching data:", data);
+            } else {
+                const data = await selectedBenes.json();
+
+
+
+
+                localStorage.setItem("selectedBeneficiaries", JSON.stringify(data))
+                console.log("Selected Benes", data)
+                setSelectedBeneficiaries(data)
+            }
+        }
+        fetchSelectedBenes()
+
+        // const lsWP = getParsedLocalStorage("current_work_plan_id")
+        // let workPlanId = lsWP.id
+        // alert("work plan id" + id)
+        // alert("work plan id" + workPlanId)
+
+    }, [])
+
+
+    // useEffect(() => {
+    //     if (!params || !params.id) return; // 🚫 guard clause
+
+    //     const id = Array.isArray(params.id) ? params.id[0] : params.id;
+    //     if (id == "new") {
+
+
+    //         const ls = getParsedLocalStorage("selectedBeneficiaries")
+
+    //         if (Array.isArray(ls)) {
+    //             const filtered = ls.filter(
+    //                 (item) =>
+    //                     item.work_plan_id === id &&
+    //                     item.immediate_supervisor_id === _session.id
+    //             );
+    //             return
+    //             // console.log("Filtered Beneficiaries:", filtered);
+    //         }
+
+
+    //     }
+
+    //     // search 
+    //     // ✅ Now it's safe to use `id`
+    //     console.log("Work Plan ID:", id);
+    //     // alert("Work Plan ID:" + id);
+
+    //     // perform your logic with `id` here
+
+    // }, []);
+
+    const updateLocalStorageBeneImmediateSupervisorId = async (id: string, isSelected: boolean) => {
+        // debugger
+        const lsEB = getParsedLocalStorage("eligible_beneficiaries")
+        if (Array.isArray(lsEB)) {
+            const updated = lsEB.map((item: any) =>
+                item.ID === id
+                    ? { ...item, ["STATUS/DEPLOYED AT"]: isSelected ? "Selected" : "Available" }
+                    : item
+            );
+
+            localStorage.setItem("eligible_beneficiaries", JSON.stringify(updated));
+            const ls = getParsedLocalStorage("eligible_beneficiaries")
+            setListOfBeneficiaries(ls)
+        }
+
+        // if (Array.isArray(lsEB)) {
+        //     for (const item of lsEB) {
+        //         // Assuming each item has an ID to match on
+        //         const id = item.id || item.bene_id;
+        //         if (!id) continue;
+
+        //         // Update only specific fields — customize as needed
+        //         await dexieDb.cfwassessment.update(id, {
+        //             last_modified_date: new Date().toISOString(),
+        //             last_modified_by: _session.userData.email,
+        //             remarks: "Selected Beneficiary for work plan",
+
+        //         });
+        //     }
+        // }
+    }
+
+
+    // useEffect(() => {
+    //     const selectedBenes = localStorage.getItem("eligible_beneficiaries")
+    //     // const selectedBenes = localStorage.getItem("selectedBeneficiaries")
+    //     if (selectedBenes) {
+    //         let parsedBenes: any[] = [];
+    //         try {
+    //             parsedBenes = JSON.parse(selectedBenes);
+    //             if (!Array.isArray(parsedBenes)) {
+    //                 parsedBenes = [];
+    //             }
+    //         } catch {
+    //             parsedBenes = [];
+    //         }
+
+    //         setListOfBeneficiaries(parsedBenes);
+
+    //     }
+    // }, [listOfBeneficiaries])
 
     type Beneficiary = {
         id: string;
@@ -1041,68 +1153,132 @@ function BeneficiariesStep({ beneficiariesData }: WizardProps) {
     };
 
     const handleBeneficiarySelection = (selectedRows: Beneficiary | Beneficiary[]) => {
-        debugger;
-        // Always get the selected row (whether array or single object)
         const selectedRow = Array.isArray(selectedRows) ? selectedRows[0] : selectedRows;
-        if (!selectedRow || selectedRow["STATUS/DEPLOYED AT"] !== "Available") {
-            return; // Do not select if not available
-        }
-        // setSelectedBeneficiaries(selectedRows)
-        // const selectedRow = JSON.stringify(selectedRows)
-        // alert(selectedRow)
-        const selectedBenes = localStorage.getItem("selectedBeneficiaries");
+        if (!selectedRow || selectedRow["STATUS/DEPLOYED AT"] !== "Available") return;
+
         let parsedBenes: Beneficiary[] = [];
-        if (selectedBenes) {
-            try {
-                parsedBenes = JSON.parse(selectedBenes);
-                if (!Array.isArray(parsedBenes)) {
-                    parsedBenes = [];
-                }
-            } catch {
-                parsedBenes = [];
-            }
+        const selectedBenes = localStorage.getItem("selectedBeneficiaries");
+
+        try {
+            parsedBenes = selectedBenes ? JSON.parse(selectedBenes) : [];
+            if (!Array.isArray(parsedBenes)) parsedBenes = [];
+        } catch {
+            parsedBenes = [];
         }
-        // const selectedRow = Array.isArray(selectedRows) ? selectedRows[0] : selectedRows;
-        if (parsedBenes.length === 0) {
-            // If empty, insert the selected row
-            parsedBenes.push(selectedRow);
+
+        // debugger
+        const existingIndex = parsedBenes.findIndex((bene) => bene.id === (selectedRow?.ID || selectedRow?.person_profile_id));
+        if (existingIndex !== -1) {
+            parsedBenes.splice(existingIndex, 1);
             toast({
-                title: "Beneficiary added",
-                description: `${selectedRow["FULL NAME"]} has been added to the selected beneficiaries.`,
-                variant: "green",
+                title: "Beneficiary removed",
+                description: `${selectedRow.full_name} has been removed from the selected beneficiaries.`,
+                variant: "destructive",
             });
         } else {
-            const existingIndex = parsedBenes.findIndex((bene: Beneficiary) => bene.ID === selectedRow?.ID);
-            if (existingIndex !== -1) {
-                // If already there, remove it
-                parsedBenes.splice(existingIndex, 1);
-                toast({
-                    title: "Beneficiary removed",
-                    description: `${selectedRow["FULL NAME"]} has been removed from the selected beneficiaries.`,
-                    variant: "destructive",
+            parsedBenes.push(selectedRow);
+            updateLocalStorageBeneImmediateSupervisorId(selectedRow.ID, true);
+            toast({
+                title: "Beneficiary added",
+                description: `${selectedRow.full_name} has been added to the selected beneficiaries.`,
+                variant: "green",
+            });
+        }
+
+        // 🔒 Ensure workPlanId is generated or reused
+        const currentId = localStorage.getItem("current_work_plan_id");
+        const isNew = currentId === "new";
+        const workPlanIdDraft = isNew ? uuidv4() : currentId;
+
+        if (isNew) {
+            localStorage.setItem("current_work_plan_id", workPlanIdDraft || ""); // ← it's already string
+        }
+
+        const workPlanRaw = localStorage.getItem("work_plan");
+        if (workPlanRaw) {
+            const parsedWPRaw = JSON.parse(workPlanRaw);
+            parsedWPRaw.id = workPlanIdDraft;
+            localStorage.setItem("work_plan", JSON.stringify(parsedWPRaw));
+        }
+
+        const fetchData = async (endpoint: string) => {
+            // debugger
+            try {
+                const onlinePayload = await LoginService.onlineLogin("dsentico@dswd.gov.ph", "Dswd@123");
+
+                const response = await fetch(endpoint, {
+                    method: "POST",
+                    headers: {
+                        Authorization: `bearer ${onlinePayload.token}`,
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify([
+                        {
+                            person_profile_id: selectedRow?.ID,
+                            immediate_supervisor_id: _session.id,
+                            work_plan_id: workPlanIdDraft,
+                            last_modified_date: new Date().toISOString(),
+                            last_modified_by: _session.userData.email,
+                            push_status_id: 1,
+                            push_date: new Date().toISOString(),
+                            remarks: "Selected by Supervisor",
+                        },
+                    ]),
                 });
-            } else {
-                // Else, add new
-                parsedBenes.push(selectedRow);
-                toast({
-                    title: "Beneficiary added",
-                    description: `${selectedRow["FULL NAME"]} has been added to the selected beneficiaries.`,
-                    variant: "green",
-                });
+
+                if (!response.ok) console.error("Failed to update CFW assessment", await response.text());
+            } catch (error) {
+                console.error("Error sending to API:", error);
             }
-        }
+        };
+
+        const createDraftWorkPlan = async () => {
+            try {
+                const onlinePayload = await LoginService.onlineLogin("dsentico@dswd.gov.ph", "Dswd@123");
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL_KCIS}work_plan/create/`, {
+                    method: "POST",
+                    headers: {
+                        Authorization: `bearer ${onlinePayload.token}`,
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify([
+                        {
+                            id: workPlanIdDraft,
+                            created_date: new Date().toISOString(),
+                            created_by: _session.userData.email,
+                            remarks: "Work Plan Drafted",
+                            immediate_supervisor_id: _session.id,
+                            status_id: 22,
+                            push_status_id: 1,
+                            push_date: new Date().toISOString(),
+                        },
+                    ]),
+                });
+
+                if (!res.ok) {
+                    console.error("Error creating draft work plan", await res.text());
+                } else {
+                    const data = await res.json();
+                    console.log("Draft work plan created:", data);
+                }
+            } catch (error) {
+                console.error("Draft creation error:", error);
+            }
+        };
+
+        if (isNew) createDraftWorkPlan();
+        fetchData(`${process.env.NEXT_PUBLIC_API_BASE_URL_KCIS}cfw_assessment/update/`);
+
         localStorage.setItem("selectedBeneficiaries", JSON.stringify(parsedBenes));
-        const lst = localStorage.getItem("selectedBeneficiaries");
-        if (lst) {
-            const parsedList = JSON.parse(lst);
-            totalNumberOfSelectedBeneficiaries = parsedList.length;
-            setSelectedBeneficiaries(parsedList);
-        }
+        setSelectedBeneficiaries(parsedBenes);
+        totalNumberOfSelectedBeneficiaries = parsedBenes.length;
+    };
 
 
-    }
+
+
     useEffect(() => {
-        debugger;
+        // debugger;
         const lst = localStorage.getItem("selectedBeneficiaries")
         if (lst) {
             const parsedList = JSON.parse(lst);
@@ -1115,9 +1291,256 @@ function BeneficiariesStep({ beneficiariesData }: WizardProps) {
     //     localStorage.setItem("selectedBeneficiaries", JSON.stringify(selectedBeneficiaries));
 
     // }, [selectedBeneficiaries])
-    const handleRemoveBene = (e: any) => {
+    const handleRemoveBene = async (e: any) => {
+        debugger
         // alert(e)
-        console.log("Selected BENE", e)
+        console.log("👪 Selected BENE", e);
+        const targetId = e.ID || e.person_profile_id;
+        if (!targetId) {
+            console.warn("❌ No valid person_profile_id found");
+            return;
+        }
+
+        const now = new Date().toISOString();
+        const remarks = "Untagged";
+
+        try {
+            // 🔐 Login once
+            const onlinePayload = await LoginService.onlineLogin("dsentico@dswd.gov.ph", "Dswd@123");
+            const token = onlinePayload.token;
+
+            // 📦 Payloads
+            const cfwAssessmentPayload = [{
+                person_profile_id: targetId,
+                immediate_supervisor_id: null,
+                work_plan_id: null,
+                last_modified_date: now,
+                last_modified_by: _session.userData.email,
+                push_status_id: 1,
+                push_date: now,
+                remarks,
+            }];
+
+            const workPlanTaskPayload = [{
+                person_profile_id: targetId,
+                is_deleted: true,
+                deleted_by: _session.userData.email,
+                deleted_date: now,
+                last_modified_date: now,
+                last_modified_by: _session.userData.email,
+                push_status_id: 1,
+                push_date: now,
+                remarks,
+            }];
+
+            // 🚀 API call: Update CFW Assessment
+            const cfwRes = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL_KCIS}cfw_assessment/update/`, {
+                method: "POST",
+                headers: {
+                    Authorization: `bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(cfwAssessmentPayload),
+            });
+
+            if (!cfwRes.ok) {
+                const errText = await cfwRes.text();
+                console.error("❌ Failed to update CFW assessment:", errText);
+            } else {
+                console.log("✅ CFW assessment untagged successfully");
+            }
+
+            // 🚀 API call: Delete Work Plan Task
+            // abang
+            // const taskRes = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL_KCIS}work_plan_task/delete/response/`, {
+            //     method: "DELETE",
+            //     headers: {
+            //         Authorization: `bearer ${token}`,
+            //         "Content-Type": "application/json",
+            //     },
+            //     body: JSON.stringify(workPlanTaskPayload),
+            // });
+
+            // if (!taskRes.ok) {
+            //     const errText = await taskRes.text();
+            //     console.error("❌ Failed to untag work plan task:", errText);
+            // } else {
+            //     console.log("✅ Work plan task marked as deleted");
+            // }
+
+            // 🧹 Optionally update localStorage and Dexie here
+
+        } catch (error) {
+            console.error("❌ Error during untagging process:", error);
+        }
+
+
+        const targetPId = e.ID || e.person_profile_id;
+
+        const updated = selectedBeneficiaries.filter((b: any) =>
+            (b.ID || b.person_profile_id) !== targetPId
+        );
+        setSelectedBeneficiaries(updated);
+        localStorage.setItem("selectedBeneficiaries", JSON.stringify(updated));
+        totalNumberOfSelectedBeneficiaries = updated.length
+        toast({
+            title: "Beneficiary removed",
+            description: `${e.full_name} has been removed from the selected beneficiaries.`,
+            variant: "destructive",
+        });
+        return
+        // if (!data) {
+        //     console.warn("⚠️ No selected beneficiaries found in localStorage.");
+        //     return null;
+        // }
+
+        // try {
+        //     const parsed = JSON.parse(data);
+
+        //     // Find matching bene by ID
+        //     const match = parsed.find((item: any) =>
+        //         item.person_profile_id === targetId || item.ID === targetId
+        //     );
+
+        //     if (!match) {
+        //         console.warn(`❌ No beneficiary found with ID: ${targetId}`);
+        //         return null;
+        //     }
+
+        //     // Return desired fields
+        //     return {
+        //         immediate_supervisor_id: match.immediate_supervisor_id,
+        //         work_plan_id: match.work_plan_id,
+        //     };
+        // } catch (err) {
+        //     console.error("❌ Error parsing selectedBeneficiaries from localStorage:", err);
+        //     return null;
+        // }
+        // return;
+        // // remove from the database
+        // const selectedRow = Array.isArray(selectedRows) ? selectedRows[0] : selectedRows;
+        // if (!selectedRow || selectedRow["STATUS/DEPLOYED AT"] !== "Available") return;
+
+        // let parsedBenes: Beneficiary[] = [];
+        // const selectedBenes = localStorage.getItem("selectedBeneficiaries");
+
+        // try {
+        //     parsedBenes = selectedBenes ? JSON.parse(selectedBenes) : [];
+        //     if (!Array.isArray(parsedBenes)) parsedBenes = [];
+        // } catch {
+        //     parsedBenes = [];
+        // }
+
+        // // debugger
+        // const existingIndex = parsedBenes.findIndex((bene) => bene.id === selectedRow?.ID);
+        // if (existingIndex !== -1) {
+        //     parsedBenes.splice(existingIndex, 1);
+        //     toast({
+        //         title: "Beneficiary removed",
+        //         description: `${selectedRow.full_name} has been removed from the selected beneficiaries.`,
+        //         variant: "destructive",
+        //     });
+        // } else {
+        //     parsedBenes.push(selectedRow);
+        //     updateLocalStorageBeneImmediateSupervisorId(selectedRow.ID, true);
+        //     toast({
+        //         title: "Beneficiary added",
+        //         description: `${selectedRow.full_name} has been added to the selected beneficiaries.`,
+        //         variant: "green",
+        //     });
+        // }
+
+        // // 🔒 Ensure workPlanId is generated or reused
+        // const currentId = localStorage.getItem("current_work_plan_id");
+        // const isNew = currentId === "new";
+        // const workPlanIdDraft = isNew ? uuidv4() : currentId;
+
+        // if (isNew) {
+        //     localStorage.setItem("current_work_plan_id", workPlanIdDraft || ""); // ← it's already string
+        // }
+
+        // const workPlanRaw = localStorage.getItem("work_plan");
+        // if (workPlanRaw) {
+        //     const parsedWPRaw = JSON.parse(workPlanRaw);
+        //     parsedWPRaw.id = workPlanIdDraft;
+        //     localStorage.setItem("work_plan", JSON.stringify(parsedWPRaw));
+        // }
+
+        // const fetchData = async (endpoint: string) => {
+        //     // debugger
+        //     try {
+        //         const onlinePayload = await LoginService.onlineLogin("dsentico@dswd.gov.ph", "Dswd@123");
+
+        //         const response = await fetch(endpoint, {
+        //             method: "POST",
+        //             headers: {
+        //                 Authorization: `bearer ${onlinePayload.token}`,
+        //                 "Content-Type": "application/json",
+        //             },
+        //             body: JSON.stringify([
+        //                 {
+        //                     person_profile_id: selectedRow?.ID,
+        //                     immediate_supervisor_id: _session.id,
+        //                     work_plan_id: workPlanIdDraft,
+        //                     last_modified_date: new Date().toISOString(),
+        //                     last_modified_by: _session.userData.email,
+        //                     push_status_id: 1,
+        //                     push_date: new Date().toISOString(),
+        //                     remarks: "Selected by Supervisor",
+        //                 },
+        //             ]),
+        //         });
+
+        //         if (!response.ok) console.error("Failed to update CFW assessment", await response.text());
+        //     } catch (error) {
+        //         console.error("Error sending to API:", error);
+        //     }
+        // };
+
+        // const createDraftWorkPlan = async () => {
+        //     try {
+        //         const onlinePayload = await LoginService.onlineLogin("dsentico@dswd.gov.ph", "Dswd@123");
+        //         const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL_KCIS}work_plan/create/`, {
+        //             method: "POST",
+        //             headers: {
+        //                 Authorization: `bearer ${onlinePayload.token}`,
+        //                 "Content-Type": "application/json",
+        //             },
+        //             body: JSON.stringify([
+        //                 {
+        //                     id: workPlanIdDraft,
+        //                     created_date: new Date().toISOString(),
+        //                     created_by: _session.userData.email,
+        //                     remarks: "Work Plan Drafted",
+        //                     immediate_supervisor_id: _session.id,
+        //                     status_id: 22,
+        //                     push_status_id: 1,
+        //                     push_date: new Date().toISOString(),
+        //                 },
+        //             ]),
+        //         });
+
+        //         if (!res.ok) {
+        //             console.error("Error creating draft work plan", await res.text());
+        //         } else {
+        //             const data = await res.json();
+        //             console.log("Draft work plan created:", data);
+        //         }
+        //     } catch (error) {
+        //         console.error("Draft creation error:", error);
+        //     }
+        // };
+
+        // if (isNew) createDraftWorkPlan();
+        // fetchData(`${process.env.NEXT_PUBLIC_API_BASE_URL_KCIS}cfw_assessment/update/`);
+
+        // localStorage.setItem("selectedBeneficiaries", JSON.stringify(parsedBenes));
+        // setSelectedBeneficiaries(parsedBenes);
+        // totalNumberOfSelectedBeneficiaries = parsedBenes.length;
+
+
+
+
     }
     return (
         <div >
@@ -1145,26 +1568,28 @@ function BeneficiariesStep({ beneficiariesData }: WizardProps) {
             <div className="flex flex-wrap mb-4">
                 <p className="text-muted-foreground mr-2">Selected Beneficiaries:</p>
 
-                {selectedBeneficiaries.map((bene) => {
+                {selectedBeneficiaries.map((bene, idx) => {
+
                     return (
-                        <div key={bene.ID} className="inline-flex items-center mr-2 mb-2">
-                            <Badge variant="green" className="flex items-center gap-2 pr-2" onClick={(e) => handleRemoveBene(bene)}>
-                                {bene["FULL NAME"]}
+                        <div key={idx} className="inline-flex items-center mr-2 mb-2">
+                            <Badge variant="green" className="flex items-center gap-2 pr-2"  >
+                                {bene["FULL NAME"] || bene.full_name}
                                 <Button
                                     size="icon"
                                     variant="ghost"
                                     className="ml-1 h-4 w-4 p-0"
                                     onClick={() => {
+                                        handleRemoveBene(bene)
                                         // Remove this beneficiary from selectedBeneficiaries and localStorage
-                                        const updated = selectedBeneficiaries.filter((b: any) => b.ID !== bene.ID);
-                                        setSelectedBeneficiaries(updated);
-                                        localStorage.setItem("selectedBeneficiaries", JSON.stringify(updated));
-                                        totalNumberOfSelectedBeneficiaries = updated.length
-                                        toast({
-                                            title: "Beneficiary removed",
-                                            description: `${bene["FULL NAME"]} has been removed from the selected beneficiaries.`,
-                                            variant: "destructive",
-                                        });
+                                        // const updated = selectedBeneficiaries.filter((b: any) => b.ID !== bene.ID);
+                                        // setSelectedBeneficiaries(updated);
+                                        // localStorage.setItem("selectedBeneficiaries", JSON.stringify(updated));
+                                        // totalNumberOfSelectedBeneficiaries = updated.length
+                                        // toast({
+                                        //     title: "Beneficiary removed",
+                                        //     description: `${bene.full_name} has been removed from the selected beneficiaries.`,
+                                        //     variant: "destructive",
+                                        // });
 
                                     }}
                                 >
@@ -1185,23 +1610,13 @@ function BeneficiariesStep({ beneficiariesData }: WizardProps) {
             <div className="border rounded-md p-6 bg-muted/20">
 
                 <AppTable
-                    data={beneficiariesData as any[]}
+                    data={listOfBeneficiaries as any[]}
+                    // data={beneficiariesData as any[]}
                     columns={columnsMasterlist}
 
-                    // enableRowSelection={true}
                     onRowClick={(row) => handleBeneficiarySelection(row)}
-                // customActions={[
-                //     {
-                //         // id: 'add',
-                //         icon: <CheckCircle className="h-5 w-5" />,
-                //         label: 'Add',
-                //         onClick: (row) => console.log('Add clicked', row),
-                //     },
-                // ]}
-                // onEdit={handleEdit}
-                // onDelete={handleDelete}
-                // onRowClick={handleRowClick}
-                // onAddNewRecord={handleAddNewRecord}
+                // onRefresh={()=>setSelectedBeneficiaries([])}
+
                 />
             </div>
         </div>
@@ -1212,7 +1627,7 @@ function BeneficiariesStep({ beneficiariesData }: WizardProps) {
 function WorkPlanStep({ workPlanDetails }: WizardProps) {
     const [workPlanData, setWorkPlanData] = useState<any>({})
     const [deploymentAreaName, setDeploymentAreaName] = useState("")
-    debugger
+    // debugger
     // alert(typeof workPlanDetails)
     // Count the number of keys in the workPlanDetails object
     const workPlanDetailsCount = workPlanDetails ? Object.keys(workPlanDetails).length : 0;
@@ -1471,10 +1886,11 @@ function TasksStep({ workPlanTasks, noOfTasks }: WizardProps) {
             return // Basic validation
         }
 
-        const taskId = Date.now().toString()
+        const taskId = uuidv4()
+        // const taskId = Date.now().toString()
         const taskToSave = { ...newTask, id: taskId }
         // const { toast } = useToast()
-        debugger;
+        // debugger;
         const isTaskExist = tasks.some((task) => task.activities_tasks.toLowerCase().trim() === newTask.activities_tasks.toLowerCase().trim() && task.category_id.toLowerCase().trim() === newTask.category_id.toLowerCase().trim())
         if (isTaskExist) {
             toast({
@@ -1629,7 +2045,8 @@ function TasksStep({ workPlanTasks, noOfTasks }: WizardProps) {
 
                             <td className="p-2">
                                 <Select
-                                    value={newTask.assigned_person_id}
+                                    value={newTask.assigned_person_id || ''}
+                                    // value={Number(newTask.assigned_person_id) || 0 || ''}
                                     onValueChange={(value) => {
                                         if (value === "all") {
                                             setNewTask({
@@ -1640,8 +2057,9 @@ function TasksStep({ workPlanTasks, noOfTasks }: WizardProps) {
                                             return;
                                         }
 
-                                        const selected = selectedBeneficiariesOptions.find((bene) => bene.ID === value);
-                                        const selectedName = selected ? selected["FULL NAME"] : "";
+                                        const selected = selectedBeneficiariesOptions.find((bene) => bene.person_profile_id === value);
+                                        const selectedName = selected ? selected.full_name : "";
+                                        // const selectedName = selected ? selected.full_name : "";
 
                                         setNewTask({
                                             ...newTask,
@@ -1661,9 +2079,10 @@ function TasksStep({ workPlanTasks, noOfTasks }: WizardProps) {
                                         )}
 
 
-                                        {selectedBeneficiariesOptions.map((bene) => (
-                                            <SelectItem key={bene.ID} value={bene.ID}>
-                                                {bene["FULL NAME"]}
+                                        {selectedBeneficiariesOptions.map((bene, idx) => (
+                                            <SelectItem key={idx} value={bene.person_profile_id}>
+                                                {bene.full_name}
+                                                {/* {bene.full_name} */}
                                                 {/* //{bene.ID} */}
                                             </SelectItem>
                                         ))}
@@ -1711,8 +2130,8 @@ function TasksStep({ workPlanTasks, noOfTasks }: WizardProps) {
                             <tbody>
 
                                 {/* Task rows */}
-                                {tasks.map((task) => (
-                                    <tr key={task.id} className="border-b hover:bg-muted/50">
+                                {tasks.map((task, idx) => (
+                                    <tr key={idx} className="border-b hover:bg-muted/50">
                                         <td className="p-2">{task.category_id == "1" ? "General" : "Specific"}</td>
                                         <td className="p-2">{task.activities_tasks}</td>
                                         <td className="p-2">{task.expected_output}</td>
@@ -1777,7 +2196,7 @@ function PreviewStep({ setCurrentStep }: any) {
     // all data that will display is from localstorage
     // for title - deployment area short name - duration - number of days - number of bene
     const workPlanTitle = () => {
-        debugger;
+        // debugger;
         let title = ""
         const lsDASN = localStorage.getItem("deployment_area_short_name_supervisor")
         if (lsDASN) {
@@ -1993,17 +2412,17 @@ function PreviewStep({ setCurrentStep }: any) {
 
                     </h3>
                     {/* {JSON.stringify(selectedBenes)} */}
-                    {selectedBenes.map((bene) => (
-                        <p key={bene.ID}>
-                            {bene["FULL NAME"]}
-                            {bene.COURSE ? ` – ${bene.COURSE}` : ""}
-                            {bene["SCHOOL NAME"] ? `, ${bene["SCHOOL NAME"]}` : ""}
+                    {selectedBenes.map((bene, idx) => (
+                        <p key={idx}>
+                            {bene.full_name}
+                            {bene.course ? ` – ${bene.course}` : ""}
+                            {bene.school_name ? `, ${bene.school_name}` : ""}
                         </p >
                     ))}
                     {/* <ul className="list-disc list-inside space-y-1">
                         {selectedBenes.map((bene: any) => (
                             <li key={bene.id}>
-                                ✅ {bene["FULL NAME"]}
+                                ✅ {bene.full_name}
                                 {bene.COURSE ? ` – ${bene.COURSE}` : ""}
                                 {bene["SCHOOL NAME"] ? `, ${bene["SCHOOL NAME"]}` : ""}
                             </li>

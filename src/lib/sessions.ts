@@ -10,7 +10,7 @@ const secretKey = process.env.SESSION_SECRET_KEY;
 const encodedKey = new TextEncoder().encode(secretKey);
 
 export async function createSession(id: string, userData: IUserData){
-    const sessionExpiration = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    const sessionExpiration = new Date(Date.now() + 12 * 60 * 60 * 1000); 
     const session = await encrypt({id, userData, sessionExpiration});
 
     (await cookies()).set("session", session, {
@@ -28,7 +28,7 @@ export async function encrypt(payload: SessionPayload){
     return new SignJWT(payload)
         .setProtectedHeader({alg: "HS256"})
         .setIssuedAt()
-        .setExpirationTime("7d")
+        .setExpirationTime("12h")
         .sign(encodedKey);
 }
 

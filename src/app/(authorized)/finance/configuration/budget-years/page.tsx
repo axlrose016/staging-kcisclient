@@ -1,6 +1,6 @@
 "use client"
-import { LibrariesService } from "@/app/(authorized)/library/LibrariesService";
-import { SettingsService } from "@/app/(authorized)/settings/SettingsService";
+import { LibrariesService } from "@/components/services/LibrariesService";
+import { SettingsService } from "@/components/services/SettingsService";
 import { AppTable } from "@/components/app-table";
 import { PushStatusBadge } from "@/components/general/push-status-badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

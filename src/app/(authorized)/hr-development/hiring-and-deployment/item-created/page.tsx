@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
 import { FolderInput, PlusCircle } from 'lucide-react';
-import { HRService } from '../../HRService';
+import { HRService } from '../../../../../components/services/HRService';
 
 function ItemCreated() {
     const [data, setData] = React.useState([]);

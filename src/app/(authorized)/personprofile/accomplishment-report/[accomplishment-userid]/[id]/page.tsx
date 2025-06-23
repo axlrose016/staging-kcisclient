@@ -1,16 +1,15 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { addDays, endOfMonth } from 'date-fns';
-import { useParams } from 'next/navigation';
+import { addDays, endOfMonth, format } from 'date-fns';
+import { useParams, useRouter } from 'next/navigation';
 import { DateRange } from 'react-day-picker';
 import { SessionPayload } from '@/types/globals';
 import { getSession } from '@/lib/sessions-client';
 import { dexieDb } from '@/db/offline/Dexie/databases/dexieDb';
-import { IAccomplishmentActualTask, IAccomplishmentReport, IPersonProfile } from '@/components/interfaces/personprofile';
+import { IAccomplishmentActualTask, IAccomplishmentReport, ICFWAssessment, IPersonProfile, IWorkPlan } from '@/components/interfaces/personprofile';
 import { ILibSchoolProfiles, LibraryOption } from '@/components/interfaces/library-interface';
 import { v4 as uuidv4 } from 'uuid';
-import { useToast } from '@/hooks/use-toast';
 import { getOfflineLibStatuses } from '@/components/_dal/offline-options';
 import { ICFWPayrollBene, ISubmissionLog } from '@/components/interfaces/cfw-payroll';
 import AppSubmitReview from '@/components/app-submit-review';
@@ -19,16 +18,24 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Download, Edit, Printer } from 'lucide-react';
+import { IAttachments } from '@/components/interfaces/general/attachments';
+import { libDb } from '@/db/offline/Dexie/databases/libraryDb';
+import { v5 as uuidv5 } from 'uuid';
+import { toast } from '@/hooks/use-toast';
 
 export type UserTypes = IPersonProfile & ILibSchoolProfiles;
 
+const baseUrl = "personprofile/accomplishment-report";
 export default function AccomplishmentReportUser() {
-    const { toast } = useToast()
+
+    const router = useRouter();
     const params = useParams<{ 'accomplishment-userid': string; id: string }>()
     const [user, setUser] = useState<UserTypes>();
     const [supervisor, setSupervisor] = useState<any>();
     const [ar, setAR] = useState<IAccomplishmentReport>()
+    const [attachments, setAttachments] = useState<IAttachments[]>([])
     const [tasks, setTasks] = useState<IAccomplishmentActualTask[]>([])
+    const [assessment, setAssessment] = useState<ICFWAssessment>()
 
 
     const getInitialDateRange = (): DateRange => {
@@ -78,8 +85,6 @@ export default function AccomplishmentReportUser() {
         created_by: ""
     });
 
-
-
     useEffect(() => {
         (async () => {
             const _session = await getSession() as SessionPayload;
@@ -90,26 +95,41 @@ export default function AccomplishmentReportUser() {
             }
 
             const statuses = await getOfflineLibStatuses();
-            const filteredStatuses = statuses.filter(status => [2, 10, 11, 10, 5, 17].includes(status.id));
+            const filteredStatuses = statuses.filter(status => [2, 10].includes(status.id));
             setStatusesOptions(filteredStatuses);
 
 
             setSession(_session)
             await getResults(_session)
         })();
-    }, [])
+    }, [date])
 
     const getResults = async (session: SessionPayload) => {
         const user = await dexieDb.person_profile.where('user_id')
             .equals(params!['accomplishment-userid']).first();
         console.log('p', { user, params, p: params!['accomplishment-userid'] })
         const merge = {
-            ...await dexieDb.lib_school_profiles.where("id").equals(user!.school_id!).first(),
+            ...await libDb.lib_school_profiles.where("id").equals(user!.school_id!).first(),
             ...user
         };
         setUser(merge as UserTypes);
 
-        const arId = params?.id == "new" ? uuidv4() : params!.id
+        let period_cover = "";
+        let r = "";
+        if (date?.from && date?.to && user?.id) {
+            period_cover = format(new Date(date!.from!)!.toISOString(), 'yyyyMMdd') + "-" + format(new Date(date!.to!)!.toISOString(), 'yyyyMMdd')
+            r = uuidv5("accomplishment report" + "-" + period_cover, user.id);
+        }
+        console.log('getResults > uuidv5', { params, date, period_cover, params_id: params!.id, user_id: user?.user_id ?? "", r })
+
+        const arId = r;
+        // If the arId is different from the current URL param, update the URL (shallow routing) without refreshing the page
+        if (params?.id !== arId && arId) {
+            // Use window.history.replaceState to update the URL without reloading the page
+            const newUrl = `/${baseUrl}/${params!['accomplishment-userid']}/${arId}`;
+            window.history.replaceState(null, '', newUrl);
+        }
+
 
         const logsQuery = await dexieDb.submission_log.where("record_id").equals(arId)
         const logs = await logsQuery.sortBy("created_date")
@@ -128,12 +148,24 @@ export default function AccomplishmentReportUser() {
         }).first()
         setCFWPayrollBene(pb)
 
-        setAR({
+        const assessment = await dexieDb.cfwassessment.where("person_profile_id").equals(user?.id || "").first();
+        console.log('assessment', assessment)
+        setAssessment(assessment)
+
+        if (!assessment || assessment?.work_plan_id == null) {
+            toast({
+                variant: "destructive",
+                title: "Assesment or Work Plan not found",
+                description: "Please notify your supervisor to create an assessment or Work plan!   ",
+            });
+        }
+
+        const raw = {
             id: arId,
-            person_id: user!.user_id,
-            period_cover_from: ar?.period_cover_from ?? date!.from!,
-            period_cover_to: ar?.period_cover_to ?? date!.to!,
-            work_plan_id: "",
+            person_profile_id: user!.user_id,
+            period_cover_from: date?.from ? format(new Date(date.from), "yyyy-MM-dd") : "",
+            period_cover_to: date?.to ? format(new Date(date.to), "yyyy-MM-dd") : "",
+            work_plan_id: assessment?.work_plan_id || "",
             accomplishment_actual_task: "",
             status_id: ar ? ar.status_id : 0,
             created_date: ar?.created_date ?? new Date().toISOString(),
@@ -141,253 +173,30 @@ export default function AccomplishmentReportUser() {
             last_modified_by: ar?.last_modified_by ?? user!.email!,
             last_modified_date: new Date().toISOString(),
             push_status_id: 0,
-            push_date: "",
-            deleted_date: "",
+            push_date: null,
+            deleted_date: null,
             deleted_by: "",
             is_deleted: false,
             remarks: "",
-        })
+        }
 
-        // await dexieDb.work_plan_cfw.put({
-        //     id: uuidv4(),
-        //     work_plan_id:"6ae189ed-eec7-4c38-a9fa-da8a00b01f21",
-        //     cfw_id:"2192a8f9-371a-4787-9604-c2f147a05e3c", 
-        //     status_id:0,
-        //     created_date:"",
-        //     created_by:"",
-        //     deleted_date:"",
-        //     deleted_by:"",
-        //     is_deleted:false,
-        // })   
-        // await dexieDb.work_plan.put({
-        //     id: '6ae189ed-eec7-4c38-a9fa-da8a00b01f21',
-        //     immediate_supervisor_id: "23db4fc3-038d-4ebc-8688-f35a1cf5f24a",
-        //     alternate_supervisor_id: "35c1f7f3-03be-4277-99cd-3b78dad9722a",
-        //     objectives: "Sample",
-        //     area_focal_person_id: "35c1f7f3-03be-4277-99cd-3b78dad9722a",
-        //     no_of_days_program_engagement: 50,
-        //     approved_work_schedule_from: "8AN - 12PM, 1PM - 5PM",
-        //     approved_work_schedule_to: "June/1/2025",
-        //     status_id: 0,
-        //     created_date: new Date().toString(),
-        //     created_by: session.userData.email!,
-        //     last_modified_date: "",
-        //     last_modified_by: "",
-        //     push_status_id: 1,
-        //     push_date: "",
-        //     deleted_date: "",
-        //     deleted_by: "",
-        //     is_deleted: false,
-        //     remarks: "",
-        //     work_plan_title: "Sample",
-        //     total_number_of_bene: 100,
-        // })
-
-        // if ((await dexieDb.work_plan_tasks.toArray()).length == 0) {
-        //     await dexieDb.work_plan_tasks.bulkPut([
-        //         {
-        //             id: uuidv4(),
-        //             work_plan_category_id: 1,
-        //             work_plan_id: "6ae189ed-eec7-4c38-a9fa-da8a00b01f21",
-        //             activities_tasks: "Attend to KC-CFW related activities",
-        //             expected_output: "Document and comply with the KC-CFW instructions",
-        //             timeline_from: new Date(),
-        //             timeline_to: new Date(),
-        //             assigned_person_id: "",
-        //             status_id: 0,
-        //             created_date: new Date().toString(),
-        //             created_by: session.userData.email!,
-        //             last_modified_date: "",
-        //             last_modified_by: "",
-        //             push_status_id: 1,
-        //             push_date: "",
-        //             deleted_date: "",
-        //             deleted_by: "",
-        //             is_deleted: false,
-        //             remarks: "",
-        //         },
-        //         {
-        //             id: uuidv4(),
-        //             work_plan_category_id: 1,
-        //             work_plan_id: "6ae189ed-eec7-4c38-a9fa-da8a00b01f21",
-        //             activities_tasks: "Encoding of the served CFW beneficiary profile in the database",
-        //             expected_output: "Encoded list of served beneficiaries and updaated database",
-        //             timeline_from: new Date(),
-        //             timeline_to: new Date(),
-        //             assigned_person_id: "",
-        //             status_id: 0,
-        //             created_date: new Date().toString(),
-        //             created_by: session.userData.email!,
-        //             last_modified_date: "",
-        //             last_modified_by: "",
-        //             push_status_id: 1,
-        //             push_date: "",
-        //             deleted_date: "",
-        //             deleted_by: "",
-        //             is_deleted: false,
-        //             remarks: "",
-        //         },
-        //         {
-        //             id: uuidv4(),
-        //             work_plan_category_id: 1,
-        //             work_plan_id: "6ae189ed-eec7-4c38-a9fa-da8a00b01f21",
-        //             activities_tasks: "Assist in the review and validation of the beneficaires submitted documents ",
-        //             expected_output: "Validated and reviewed payment requirements of the beneficiaries and generate the list of beneficiaries with compliances ",
-        //             timeline_from: new Date(),
-        //             timeline_to: new Date(),
-        //             assigned_person_id: "",
-        //             status_id: 0,
-        //             created_date: new Date().toString(),
-        //             created_by: session.userData.email!,
-        //             last_modified_date: "",
-        //             last_modified_by: "",
-        //             push_status_id: 1,
-        //             push_date: "",
-        //             deleted_date: "",
-        //             deleted_by: "",
-        //             is_deleted: false,
-        //             remarks: "",
-        //         },
-        //         {
-        //             id: uuidv4(),
-        //             work_plan_category_id: 1,
-        //             work_plan_id: "6ae189ed-eec7-4c38-a9fa-da8a00b01f21",
-        //             activities_tasks: "Assist in the computation of payroll assistance",
-        //             expected_output: "Accurate computation of the beneficiaries assistance and included on the payroll",
-        //             timeline_from: new Date(),
-        //             timeline_to: new Date(),
-        //             assigned_person_id: "",
-        //             status_id: 0,
-        //             created_date: new Date().toString(),
-        //             created_by: session.userData.email!,
-        //             last_modified_date: "",
-        //             last_modified_by: "",
-        //             push_status_id: 1,
-        //             push_date: "",
-        //             deleted_date: "",
-        //             deleted_by: "",
-        //             is_deleted: false,
-        //             remarks: "",
-        //         },
-        //         {
-        //             id: uuidv4(),
-        //             work_plan_category_id: 1,
-        //             work_plan_id: "6ae189ed-eec7-4c38-a9fa-da8a00b01f21",
-        //             activities_tasks: "Data recording of the actual day rendered of the beneficiaries based on their submitted payment requirements in the database",
-        //             expected_output: "Updated monitoring tool ",
-        //             timeline_from: new Date(),
-        //             timeline_to: new Date(),
-        //             assigned_person_id: "",
-        //             status_id: 0,
-        //             created_date: new Date().toString(),
-        //             created_by: session.userData.email!,
-        //             last_modified_date: "",
-        //             last_modified_by: "",
-        //             push_status_id: 1,
-        //             push_date: "",
-        //             deleted_date: "",
-        //             deleted_by: "",
-        //             is_deleted: false,
-        //             remarks: "",
-        //         },
-        //         {
-        //             id: uuidv4(),
-        //             work_plan_category_id: 2,
-        //             work_plan_id: "6ae189ed-eec7-4c38-a9fa-da8a00b01f21",
-        //             activities_tasks: "Assist during payout activity.",
-        //             expected_output: "Payout report.",
-        //             timeline_from: new Date(),
-        //             timeline_to: new Date(),
-        //             assigned_person_id: "",
-        //             status_id: 0,
-        //             created_date: new Date().toString(),
-        //             created_by: session.userData.email!,
-        //             last_modified_date: "",
-        //             last_modified_by: "",
-        //             push_status_id: 1,
-        //             push_date: "",
-        //             deleted_date: "",
-        //             deleted_by: "",
-        //             is_deleted: false,
-        //             remarks: "",
-        //         },
-        //         {
-        //             id: uuidv4(),
-        //             work_plan_category_id: 1,
-        //             work_plan_id: "6ae189ed-eec7-4c38-a9fa-da8a00b01f21",
-        //             activities_tasks: "Sorting and filing of CFW documents such as but not limited to their profile forms, payment requirements and other liquidation documents ",
-        //             expected_output: "Sorted and compiled the liquidation documents",
-        //             timeline_from: new Date(),
-        //             timeline_to: new Date(),
-        //             assigned_person_id: "",
-        //             status_id: 0,
-        //             created_date: new Date().toString(),
-        //             created_by: session.userData.email!,
-        //             last_modified_date: "",
-        //             last_modified_by: "",
-        //             push_status_id: 1,
-        //             push_date: "",
-        //             deleted_date: "",
-        //             deleted_by: "",
-        //             is_deleted: false,
-        //             remarks: "",
-        //         },
-        //         {
-        //             id: uuidv4(),
-        //             work_plan_category_id: 1,
-        //             work_plan_id: "6ae189ed-eec7-4c38-a9fa-da8a00b01f21",
-        //             activities_tasks: "Scanning of the liquidation payment requirements",
-        //             expected_output: "Scanned the liquidation documents",
-        //             timeline_from: new Date(),
-        //             timeline_to: new Date(),
-        //             assigned_person_id: "",
-        //             status_id: 0,
-        //             created_date: new Date().toString(),
-        //             created_by: session.userData.email!,
-        //             last_modified_date: "",
-        //             last_modified_by: "",
-        //             push_status_id: 1,
-        //             push_date: "",
-        //             deleted_date: "",
-        //             deleted_by: "",
-        //             is_deleted: false,
-        //             remarks: "",
-        //         },
-        //         {
-        //             id: uuidv4(),
-        //             work_plan_category_id: 2,
-        //             work_plan_id: "6ae189ed-eec7-4c38-a9fa-da8a00b01f21",
-        //             activities_tasks: "Generate payroll list for the month period of February and March.",
-        //             expected_output: "Generated the payroll list covered the months of February and March. ",
-        //             timeline_from: new Date(),
-        //             timeline_to: new Date(),
-        //             assigned_person_id: "8d148ae3-83d9-4caf-84c2-39238db6a4cc",
-        //             status_id: 0,
-        //             created_date: new Date().toString(),
-        //             created_by: session.userData.email!,
-        //             last_modified_date: "",
-        //             last_modified_by: "",
-        //             push_status_id: 1,
-        //             push_date: "",
-        //             deleted_date: "",
-        //             deleted_by: "",
-        //             is_deleted: false,
-        //             remarks: "",
-        //         },
-        //     ])
-        // }
+        setAR(raw)
+        const attachments = await dexieDb.attachments.where("record_id").equals(arId).toArray()
+        console.log('attachments', { raw, attachments })
+        setAttachments(attachments)
     };
 
     const handleSaveAccomplishmentReport = () => {
         const id = `${ar?.id}`
-        if (session?.userData.role == "Administrator") {
+        const module = "accomplishment report";
+        if (["Administrator", "CFW Administrator", "CFW Immediate Supervisor"].includes(session?.userData.role!)) {
             (async () => {
                 const raw = {
                     ...selectedStatus!,
                     id: uuidv4(),
                     record_id: id,
                     bene_id: user!.id,
-                    module: "accomplishment report",
+                    module: module,
                     created_date: new Date().toISOString(),
                     created_by: session!.userData!.email!,
                     push_status_id: 0,
@@ -401,19 +210,19 @@ export default function AccomplishmentReportUser() {
                         daily_time_record_reviewed_date: payrollbene?.daily_time_record_reviewed_date || "",
                         accomplishment_report_id: id,
                         accomplishment_report_reviewed_date: new Date().toISOString(),
-                        period_cover_from: getInitialDateRange().from!,
-                        period_cover_to: getInitialDateRange().to!,
+                        period_cover_from: date?.from!,
+                        period_cover_to: date?.to!,
                         operation_reviewed_by: "",
                         odnpm_reviewed_by: "",
                         finance_reviewed_by: "",
                         operation_status: "",
-                        operation_status_date: "",
+                        operation_status_date: null,
                         odnpm_status: "",
-                        odnpm_status_date: "",
+                        odnpm_status_date: null,
                         finance_status: "",
-                        finance_status_date: "",
-                        date_released: "",
-                        date_received: "",
+                        finance_status_date: null,
+                        date_released: null,
+                        date_received: null,
                     }
                     await dexieDb.cfwpayroll_bene.put(rev)
                 }
@@ -438,6 +247,10 @@ export default function AccomplishmentReportUser() {
                 if (id) {
                     await dexieDb.accomplishment_report.put(raw, id)
                     await dexieDb.accomplishment_actual_task.bulkPut(tasks,)
+                    await dexieDb.attachments.bulkPut(attachments)
+                    console.log('handleSaveAccomplishmentReport > raw', raw);
+                    console.log('handleSaveAccomplishmentReport > tasks', tasks);
+                    console.log('handleSaveAccomplishmentReport > attachments', attachments);
                     toast({
                         variant: "green",
                         title: "Accomplishment Report",
@@ -470,6 +283,8 @@ export default function AccomplishmentReportUser() {
 
                 <CardContent>
                     <AccomplishmentUser
+                        disabled={session?.userData.role !== "CFW Beneficiary"}
+                        assessment={assessment!}
                         user={user}
                         date={date}
                         setDate={setDate}
@@ -478,19 +293,11 @@ export default function AccomplishmentReportUser() {
                         accomplishmentReportId={ar?.id}
                         onSupervisorTypeChange={(user) => setSupervisor(user)}
                         supervisorType={supervisor}
+                        onChangeAttachments={setAttachments}
                     />
 
-                    {session?.userData.role == "Administrator" ?
-                        <div className="m-3 no-print">
-                            <AppSubmitReview
-                                session={session!}
-                                review_logs={submissionLogs}
-                                options={statusesOptions}
-                                review={selectedStatus}
-                                onChange={(review) => setSelectedStatus(review)}
-                                onSubmit={() => handleSaveAccomplishmentReport()}
-                            />
-                        </div> : <div className="flex justify-start gap-2 m-1 no-print">
+                    {["CFW Beneficiary"].includes(session?.userData.role!) &&
+                        <div className="flex justify-start gap-2 m-1 no-print">
                             <Button onClick={handleSaveAccomplishmentReport}>
                                 <Edit className="mr-1 h-4 w-4" /> Save
                             </Button>
@@ -552,10 +359,22 @@ export default function AccomplishmentReportUser() {
                                     <Button variant="outline" onClick={() => console.log('Downloading PDF...')}>
                                         <Download className="mr-1 h-4 w-4" /> Download
                                     </Button>
-                                </>}
+                                </>
+                            }
+                        </div>
+                    }
 
+                    <div className="m-1 no-print">
+                        <AppSubmitReview
+                            session={session!}
+                            review_logs={submissionLogs}
+                            options={statusesOptions}
+                            review={selectedStatus}
+                            onChange={(review) => setSelectedStatus(review)}
+                            onSubmit={() => handleSaveAccomplishmentReport()}
+                        />
+                    </div>
 
-                        </div>}
                 </CardContent>
             </div>
         </Card>

@@ -17,19 +17,21 @@ import { useParams, usePathname, useRouter, useSearchParams } from "next/navigat
 import { toast } from "@/hooks/use-toast"
 import { FormDropDown } from "@/components/forms/form-dropdown"
 import { LibraryOption } from "@/components/interfaces/library-interface"
-import { getOfflineLibAppropriationSource, getOfflineLibAppropriationType, getOfflineLibBudgetYear, getOfflineLibLevel, getOfflineLibPAP } from "@/components/_dal/offline-options"
+import { getOfflineLibAppropriationSource, getOfflineLibAppropriationType, getOfflineLibBudgetYear, getOfflineLibFundSourceOptions, getOfflineLibLevel, getOfflineLibModalityOptions } from "@/components/_dal/offline-options"
 import { dxFetchData } from "@/components/_dal/external-apis/dxcloud"
 import { IAllocation, IAllocationUacs } from "@/db/offline/Dexie/schema/finance-service"
 import { AppTable } from "@/components/app-table"
-import { FinanceService } from "../../../../FinanceService"
+import { FinanceService } from "../../../../../../../components/services/FinanceService"
 import { formatPHP } from "@/components/utils/utils"
 import { useAlert } from "@/components/general/use-alert"
+import { PushStatusBadge } from "@/components/general/push-status-badge"
 
 const formSchema = z.object({
   id: z.string(),
   date_allocation:z.date().nullable().optional().transform((val) => (val ? val.toISOString() : null)),
   region_code: z.string().min(1, "Region is required"),
-  pap_id: z.coerce.number().int().positive("PAP is required"),
+  fund_source_id: z.coerce.number().int().positive("Fund Source is required"),
+  modality_id: z.coerce.number().int().positive("Modality is required"),
   budget_year_id: z.coerce.number().int().positive("Budget Year is required"),
   appropriation_source_id: z.coerce.number().int().positive("Appropriation Source is required"),
   appropriation_type_id: z.coerce.number().int().positive("Appropriation Type is required"), 
@@ -64,7 +66,8 @@ export default function FormAllocation() {
   const [budget_year, setBudgetYear] = useState<LibraryOption[]>([]);
   const [appropriation_type, setAppropriationType] = useState<LibraryOption[]>([]);
   const [appropriation_source, setAppropriationSource] = useState<LibraryOption[]>([]);
-  const [pap, setPap] = useState<LibraryOption[]>([]);
+  const [modality, setModality] = useState<LibraryOption[]>([]);
+  const [fund_source, setFundSource] = useState<LibraryOption[]>([]);
   const [grandTotal, setGrandTotal] = useState("0");
 
   const id = typeof params?.id === 'string' ? params.id : '';
@@ -76,8 +79,10 @@ export default function FormAllocation() {
       setAppropriationSource(lib_appropriation_source);
       const lib_appropriation_type = await getOfflineLibAppropriationType();
       setAppropriationType(lib_appropriation_type);
-      const lib_pap = await getOfflineLibPAP();
-      setPap(lib_pap);
+      const lib_modality = await getOfflineLibModalityOptions();
+      setModality(lib_modality);
+      const lib_fund_source = await getOfflineLibFundSourceOptions();
+      setFundSource(lib_fund_source);
 
       await dxFetchData("regions", "/api-libs/psgc/regions", data => {
         const regionOptions = data.map((item: any) => ({
@@ -95,7 +100,8 @@ export default function FormAllocation() {
     id: "",
     date_allocation:null,
     region_code: "",
-    pap_id: 0,
+    fund_source_id: 0,
+    modality_id: 0,
     budget_year_id: 0,
     appropriation_source_id: 0,
     appropriation_type_id: 0,
@@ -129,12 +135,13 @@ export default function FormAllocation() {
   }, [id,form]);
 
   async function onSubmit(data: FormValues, redirect?: boolean) {
-    debugger;
-    const hasExist = await financeService.checkDuplicateAllocation(data);
-    if (hasExist) {
+    if(data.id === "" || data.id === "0"){
+      const hasExist = await financeService.checkDuplicateAllocation(data);
+      if (hasExist) {
         handleWarningAlert(hasExist);
         return undefined
       }
+    }
     financeService.saveOfflineAllocation(data).then((response:any) => {
       if (response) {
         if(redirect){
@@ -181,6 +188,16 @@ export default function FormAllocation() {
   }
 
     const columnsMasterlist = [
+      {
+          id: 'push status id',
+          header: 'Uploading Status',
+          accessorKey: 'push_status_id',
+          filterType: 'select',
+          filterOptions: ['Unknown', 'Uploaded', 'For Upload'],
+          sortable: true,
+          align: "center",
+          cell: (value: any) =>  <PushStatusBadge push_status_id={value} size="md" />
+      },
       {
           id: 'allotment description',
           header: 'Allotment Class',
@@ -304,10 +321,7 @@ export default function FormAllocation() {
                       </FormItem>
                       )}
                     />
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <FormField
+                    <FormField
                       control={form.control}
                       name="region_code"
                       render={({ field }) => (
@@ -327,18 +341,41 @@ export default function FormAllocation() {
                       </FormItem>
                       )}
                   />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <FormField
+                      control={form.control}
+                      name="fund_source_id"
+                      render={({ field }) => (
+                      <FormItem>
+                          <FormLabel>Fund Source</FormLabel>
+                          <FormControl>
+                              <FormDropDown
+                              id="fund_source_id"
+                              options={fund_source}
+                              selectedOption={fund_source.find(r => r.id === field.value)?.id || null}
+                              onChange={(selected) => {
+                              field.onChange(selected); 
+                              }}
+                          />
+                          </FormControl>
+                          <FormMessage />
+                      </FormItem>
+                      )}
+                  />
 
                   <FormField
                       control={form.control}
-                      name="pap_id"
+                      name="modality_id"
                       render={({ field }) => (
                       <FormItem>
-                          <FormLabel>PAP</FormLabel>
+                          <FormLabel>Modality</FormLabel>
                           <FormControl>
                               <FormDropDown
-                              id="pap_id"
-                              options={pap}
-                              selectedOption={pap.find(r => r.id === field.value)?.id || null}
+                              id="modality_id"
+                              options={modality}
+                              selectedOption={modality.find(r => r.id === field.value)?.id || null}
                               onChange={(selected) => {
                               field.onChange(selected); 
                               }}
@@ -404,7 +441,7 @@ export default function FormAllocation() {
             </fieldset>
           </form>
         </Form>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-1 py-5">
+        <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-1 py-5">
           <Card className="max-w-full">
             <CardHeader className="relative">
               <CardDescription>Total Allocation Amount</CardDescription>

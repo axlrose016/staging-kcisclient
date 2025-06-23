@@ -27,7 +27,7 @@ function newAbortSignal(timeoutMs: number) {
 import { getSession } from '@/lib/sessions-client';
 import { SessionPayload } from '@/types/globals';
 import axios from 'axios';
-import LoginService from "@/app/login/LoginService";
+import LoginService from "@/components/services/LoginService";
 import { IAttachments } from "@/components/interfaces/general/attachments";
 import WorkPlan from "../masterlist/[record]/work_plan";
 

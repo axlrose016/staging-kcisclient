@@ -17,7 +17,7 @@ interface UseProfileData {
 // import { getSession } from '@/lib/sessions-client';
 // import { SessionPayload } from '@/types/globals';
 // import axios from 'axios';
-import LoginService from "../app/login/LoginService"; // Adjusted the relative path
+import LoginService from "../components/services/LoginService"; // Adjusted the relative path
 export function useFetchAndSyncProfile(userId: string): UseProfileData {
     const [profile, setProfile] = useState<IPersonProfile | null>(null);
     const [sectors, setSectors] = useState<IPersonProfileSector[]>([]);

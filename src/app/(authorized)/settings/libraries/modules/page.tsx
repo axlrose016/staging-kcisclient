@@ -9,10 +9,11 @@ import LoadingScreen from "@/components/general/loading-screen";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
 import React from "react";
-import { SettingsService } from "../../SettingsService";
+import { SettingsService } from "../../../../../components/services/SettingsService";
 import { dexieDb } from "@/db/offline/Dexie/databases/dexieDb";
 import { toast } from "@/hooks/use-toast";
 import { PushStatusBadge } from "@/components/general/push-status-badge";
+import { libDb } from "@/db/offline/Dexie/databases/libraryDb";
 
 export default function Module(){
     const [modules, setModules] = React.useState([]);
@@ -52,7 +53,7 @@ export default function Module(){
     }
 
   const handleDelete = async (row: any) => {
-    const success = await settingsService.deleteData(dexieDb, "modules", row);
+    const success = await settingsService.deleteData(libDb, "modules", row);
         if (success) {
         toast({
             variant: "green",

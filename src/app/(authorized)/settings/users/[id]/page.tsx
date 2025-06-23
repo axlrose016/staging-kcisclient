@@ -18,6 +18,8 @@ import { AppTable } from "@/components/app-table"
 import { getOfflineLibLevel, getOfflineRoles } from "@/components/_dal/offline-options"
 import { FormDropDown } from "@/components/forms/form-dropdown"
 import { PushStatusBadge } from "@/components/general/push-status-badge"
+import { SettingsService } from "../../../../../components/services/SettingsService"
+import { dexieDb } from "@/db/offline/Dexie/databases/dexieDb"
 
 const formSchema = z.object({
   id: z.string(),
@@ -39,6 +41,7 @@ export default function FormModule() {
   const [access, setAccess] = useState<any>(null);
   const [level, setLevel] = useState<LibraryOption[]>([]);
   const [roles, setRoles] = useState<LibraryOption[]>([]);
+  const settingsService = new SettingsService();
 
   const id = typeof params?.id === 'string' ? params.id : '';
 
@@ -52,9 +55,7 @@ export default function FormModule() {
     fetchLibrary();
   }, [])
 
-  
-  useEffect(() => {
-      async function fetchRecordAndResetForm() {
+  async function fetchRecordAndResetForm() {
         if (id) {
           const [fetchedRecord, lib_roles] = await Promise.all([
             userService.getOfflineUserById(id) as Promise<IUser>,
@@ -71,7 +72,9 @@ export default function FormModule() {
           }
         }
       }
+
   
+  useEffect(() => {
       fetchRecordAndResetForm();
     }, [id]);
 
@@ -111,8 +114,16 @@ export default function FormModule() {
         });
   }
 
-  const handleDelete = (row: any) => {
-    console.log('Delete:', row);
+  const handleDelete = async (row: any) => {
+    const success = await settingsService.deleteData(dexieDb, "useraccess", row,null);
+    if(success){
+        toast({
+            variant: "green",
+            title: "Success.",
+            description: "Record successfully deleted!",
+        })
+        fetchRecordAndResetForm();
+    }  
   };
 
   const handleRowClick = (row: any) => {

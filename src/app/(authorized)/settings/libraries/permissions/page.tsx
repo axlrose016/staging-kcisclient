@@ -12,9 +12,10 @@ import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, Tabl
 import { getLibrary } from "@/lib/libraries";
 import { useRouter } from "next/navigation";
 import React from "react";
-import { SettingsService } from "../../SettingsService";
+import { SettingsService } from "../../../../../components/services/SettingsService";
 import { dexieDb } from "@/db/offline/Dexie/databases/dexieDb";
 import { toast } from "@/hooks/use-toast";
+import { libDb } from "@/db/offline/Dexie/databases/libraryDb";
 
 export default function Permissions() {
     const [permissions, setPermissions] = React.useState([]);
@@ -58,7 +59,7 @@ export default function Permissions() {
   };
 
   const handleDelete = async (row: any) => {
-    const success = await settingsService.deleteData(dexieDb, "permissions", row);
+    const success = await settingsService.deleteData(libDb, "permissions", row);
         if (success) {
         toast({
             variant: "green",

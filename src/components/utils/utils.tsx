@@ -3,3 +3,13 @@ export const formatPHP = (amount: number): string =>
     style: 'currency',
     currency: 'PHP',
   }).format(amount);
+
+
+export const getParsedLocalStorage = (key: string) => {
+  try {
+    const item = localStorage.getItem(key);
+    return item ? JSON.parse(item) : null;
+  } catch {
+    return null;
+  }
+};

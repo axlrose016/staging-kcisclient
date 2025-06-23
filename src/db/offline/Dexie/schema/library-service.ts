@@ -5,39 +5,39 @@ import { ILibAllotmentClass, ILibAppropriationSource, ILibAppropriationType, ILi
 import { ICFWSchedules, ICFWTimeLogs, IUser, IUserAccess } from "@/components/interfaces/iuser";
 import { seedCFWSchedules, seedCFWTimeLogs } from "./user-service";
 
-const tblRoles = dexieDb.table('roles') as EntityTable<IRoles, 'id'>;
-const tblModules = dexieDb.table('modules') as EntityTable<IModules, 'id'>;
-const tblPermissions = dexieDb.table('permissions') as EntityTable<IPermissions, 'id'>;
-const tblLibModality = dexieDb.table('lib_modality') as EntityTable<ILibModality, 'id'>;
-const tblLibModalitySubCategory = dexieDb.table('lib_modality_sub_category') as EntityTable<ILibModalitySubCategory, 'id'>;
-const tblLibSex = dexieDb.table('lib_sex') as EntityTable<ILibSex, 'id'>;
-const tblLibCivilStatus = dexieDb.table('lib_civil_status') as EntityTable<ILibCivilStatus, 'id'>;
-const tblLibExtensionName = dexieDb.table('lib_extension_name') as EntityTable<ILibExtensionName, 'id'>;
-const tblLibSectors = dexieDb.table('lib_sectors') as EntityTable<ILibSectors, 'id'>;
-const tblLibIdCard = dexieDb.table('lib_id_card') as EntityTable<ILibIdCard, 'id'>;
-const tblLibEducationalAttainment = dexieDb.table('lib_educational_attainment') as EntityTable<ILibEducationalAttainment, 'id'>;
-const tblLibRelationshipToBeneficiary = dexieDb.table('lib_relationship_to_beneficiary') as EntityTable<ILibRelationshipToBeneficiary, 'id'>;
-const tblLibTypeOfDisability = dexieDb.table('lib_type_of_disability') as EntityTable<ILibTypeOfDisability, 'id'>;
-const tblLibCFWType = dexieDb.table('lib_cfw_type') as EntityTable<ILibCFWType, 'id'>;
-const tblLibYearLevel = dexieDb.table('lib_year_level') as EntityTable<ILibYearLevel, 'id'>;
-const tblLibCourses = dexieDb.table('lib_courses') as EntityTable<ILibCourses, 'id'>;
-const tblLibDeploymentArea = dexieDb.table('lib_deployment_area') as EntityTable<ILibDeploymentArea, 'id'>;
-const tblLibTypeOfWork = dexieDb.table('lib_type_of_work') as EntityTable<ILibTypeOfWork, 'id'>;
-const tblLibFilesToUpload = dexieDb.table('lib_files_to_upload') as EntityTable<ILibFilesToUpload, 'id'>;
-const tblLibIPGroup = dexieDb.table('lib_ip_group') as EntityTable<ILibIPGroup, 'id'>;
-const tblLibYearServed = dexieDb.table('lib_year_served') as EntityTable<ILibYearServed, 'id'>;
-const tblLibProgramTypes = dexieDb.table('lib_program_types') as EntityTable<ILibProgramTypes, 'id'>;
+const tblRoles = libDb.table('roles') as EntityTable<IRoles, 'id'>;
+const tblModules = libDb.table('modules') as EntityTable<IModules, 'id'>;
+const tblPermissions = libDb.table('permissions') as EntityTable<IPermissions, 'id'>;
+const tblLibModality = libDb.table('lib_modality') as EntityTable<ILibModality, 'id'>;
+const tblLibModalitySubCategory = libDb.table('lib_modality_sub_category') as EntityTable<ILibModalitySubCategory, 'id'>;
+const tblLibSex = libDb.table('lib_sex') as EntityTable<ILibSex, 'id'>;
+const tblLibCivilStatus = libDb.table('lib_civil_status') as EntityTable<ILibCivilStatus, 'id'>;
+const tblLibExtensionName = libDb.table('lib_extension_name') as EntityTable<ILibExtensionName, 'id'>;
+const tblLibSectors = libDb.table('lib_sectors') as EntityTable<ILibSectors, 'id'>;
+const tblLibIdCard = libDb.table('lib_id_card') as EntityTable<ILibIdCard, 'id'>;
+const tblLibEducationalAttainment = libDb.table('lib_educational_attainment') as EntityTable<ILibEducationalAttainment, 'id'>;
+const tblLibRelationshipToBeneficiary = libDb.table('lib_relationship_to_beneficiary') as EntityTable<ILibRelationshipToBeneficiary, 'id'>;
+const tblLibTypeOfDisability = libDb.table('lib_type_of_disability') as EntityTable<ILibTypeOfDisability, 'id'>;
+const tblLibCFWType = libDb.table('lib_cfw_type') as EntityTable<ILibCFWType, 'id'>;
+const tblLibYearLevel = libDb.table('lib_year_level') as EntityTable<ILibYearLevel, 'id'>;
+const tblLibCourses = libDb.table('lib_courses') as EntityTable<ILibCourses, 'id'>;
+const tblLibDeploymentArea = libDb.table('lib_deployment_area') as EntityTable<ILibDeploymentArea, 'id'>;
+const tblLibTypeOfWork = libDb.table('lib_type_of_work') as EntityTable<ILibTypeOfWork, 'id'>;
+const tblLibFilesToUpload = libDb.table('lib_files_to_upload') as EntityTable<ILibFilesToUpload, 'id'>;
+const tblLibIPGroup = libDb.table('lib_ip_group') as EntityTable<ILibIPGroup, 'id'>;
+const tblLibYearServed = libDb.table('lib_year_served') as EntityTable<ILibYearServed, 'id'>;
+const tblLibProgramTypes = libDb.table('lib_program_types') as EntityTable<ILibProgramTypes, 'id'>;
 const tblCFWSchedules = dexieDb.table('cfwschedules') as EntityTable<ICFWSchedules, 'id'>;
 const tblCFWTimeLogs = dexieDb.table('cfwtimelogs') as EntityTable<ICFWTimeLogs, 'id'>;
-const tblLibSchoolProfiles = dexieDb.table('lib_school_profiles') as EntityTable<ILibSchoolProfiles, 'id'>;
-const tblLibSchoolPrograms = dexieDb.table('lib_school_programs') as EntityTable<ILibSchoolPrograms, 'id'>;
-const tblLibStatuses = dexieDb.table('lib_statuses') as EntityTable<ILibStatuses, 'id'>;
-const tblLibDeploymentAreaCategories = dexieDb.table('lib_deployment_area_categories') as EntityTable<ILibDeploymentAreaCategories, 'id'>;
+const tblLibSchoolProfiles = libDb.table('lib_school_profiles') as EntityTable<ILibSchoolProfiles, 'id'>;
+const tblLibSchoolPrograms = libDb.table('lib_school_programs') as EntityTable<ILibSchoolPrograms, 'id'>;
+const tblLibStatuses = libDb.table('lib_statuses') as EntityTable<ILibStatuses, 'id'>;
+const tblLibDeploymentAreaCategories = libDb.table('lib_deployment_area_categories') as EntityTable<ILibDeploymentAreaCategories, 'id'>;
 
 
 //Library DB
 const tblBudgetYear = libDb.table('lib_budget_year') as EntityTable<ILibBudgetYear, 'id'>;
-const tblPAP = libDb.table('lib_pap') as EntityTable<ILibPAP, 'id'>;
+// const tblPAP = libDb.table('lib_pap') as EntityTable<ILibPAP, 'id'>;
 const tblAllotmentClass = libDb.table('lib_allotment_class') as EntityTable<ILibAllotmentClass, 'id'>;
 const tblAppropriationSource = libDb.table('lib_appropriation_source') as EntityTable<ILibAppropriationSource, 'id'>;
 const tblAppropriationType = libDb.table('lib_appropriation_type') as EntityTable<ILibAppropriationType,'id'>;
@@ -423,6 +423,7 @@ export const seedLibModalities: ILibModality[] = [
     {
         "id": 1,
         "modality_name": "KC1",
+        "finance_code": null,
         "created_date": new Date().toISOString(),
         "created_by": "00000000-0000-0000-0000-000000000000",
         "last_modified_by": "",
@@ -438,6 +439,7 @@ export const seedLibModalities: ILibModality[] = [
     {
         "id": 2,
         "modality_name": "PAMANA (2016 and earlier)",
+        "finance_code": null,
         "created_date": new Date().toISOString(),
         "created_by": "00000000-0000-0000-0000-000000000000",
         "last_modified_by": "",
@@ -453,6 +455,7 @@ export const seedLibModalities: ILibModality[] = [
     {
         "id": 3,
         "modality_name": "MCC",
+        "finance_code": null,
         "created_date": new Date().toISOString(),
         "created_by": "00000000-0000-0000-0000-000000000000",
         "last_modified_by": "",
@@ -468,6 +471,7 @@ export const seedLibModalities: ILibModality[] = [
     {
         "id": 4,
         "modality_name": "AF (Old)",
+        "finance_code": null,
         "created_date": new Date().toISOString(),
         "created_by": "00000000-0000-0000-0000-000000000000",
         "last_modified_by": "",
@@ -483,6 +487,7 @@ export const seedLibModalities: ILibModality[] = [
     {
         "id": 5,
         "modality_name": "AUSAid",
+        "finance_code": null,
         "created_date": new Date().toISOString(),
         "created_by": "00000000-0000-0000-0000-000000000000",
         "last_modified_by": "",
@@ -498,6 +503,7 @@ export const seedLibModalities: ILibModality[] = [
     {
         "id": 6,
         "modality_name": "PODER",
+        "finance_code": null,
         "created_date": new Date().toISOString(),
         "created_by": "00000000-0000-0000-0000-000000000000",
         "last_modified_by": "",
@@ -513,6 +519,7 @@ export const seedLibModalities: ILibModality[] = [
     {
         "id": 7,
         "modality_name": "NCDDP",
+        "finance_code": null,
         "created_date": new Date().toISOString(),
         "created_by": "00000000-0000-0000-0000-000000000000",
         "last_modified_by": "",
@@ -528,6 +535,7 @@ export const seedLibModalities: ILibModality[] = [
     {
         "id": 8,
         "modality_name": "BUB",
+        "finance_code": null,
         "created_date": new Date().toISOString(),
         "created_by": "00000000-0000-0000-0000-000000000000",
         "last_modified_by": "",
@@ -543,6 +551,7 @@ export const seedLibModalities: ILibModality[] = [
     {
         "id": 9,
         "modality_name": "JFPR",
+        "finance_code": null,
         "created_date": new Date().toISOString(),
         "created_by": "00000000-0000-0000-0000-000000000000",
         "last_modified_by": "",
@@ -558,6 +567,7 @@ export const seedLibModalities: ILibModality[] = [
     {
         "id": 10,
         "modality_name": "DFAT",
+        "finance_code": null,
         "created_date": new Date().toISOString(),
         "created_by": "00000000-0000-0000-0000-000000000000",
         "last_modified_by": "",
@@ -573,6 +583,7 @@ export const seedLibModalities: ILibModality[] = [
     {
         "id": 11,
         "modality_name": "GIG",
+        "finance_code": null,
         "created_date": new Date().toISOString(),
         "created_by": "00000000-0000-0000-0000-000000000000",
         "last_modified_by": "",
@@ -588,6 +599,7 @@ export const seedLibModalities: ILibModality[] = [
     {
         "id": 12,
         "modality_name": "CCL",
+        "finance_code": null,
         "created_date": new Date().toISOString(),
         "created_by": "00000000-0000-0000-0000-000000000000",
         "last_modified_by": "",
@@ -603,6 +615,7 @@ export const seedLibModalities: ILibModality[] = [
     {
         "id": 13,
         "modality_name": "GOP",
+        "finance_code": null,
         "created_date": new Date().toISOString(),
         "created_by": "00000000-0000-0000-0000-000000000000",
         "last_modified_by": "",
@@ -618,6 +631,7 @@ export const seedLibModalities: ILibModality[] = [
     {
         "id": 14,
         "modality_name": "L&E",
+        "finance_code": null,
         "created_date": new Date().toISOString(),
         "created_by": "00000000-0000-0000-0000-000000000000",
         "last_modified_by": "",
@@ -633,6 +647,7 @@ export const seedLibModalities: ILibModality[] = [
     {
         "id": 15,
         "modality_name": "IP-CDD",
+        "finance_code": null,
         "created_date": new Date().toISOString(),
         "created_by": "00000000-0000-0000-0000-000000000000",
         "last_modified_by": "",
@@ -648,6 +663,7 @@ export const seedLibModalities: ILibModality[] = [
     {
         "id": 16,
         "modality_name": "MAKILAHOK",
+        "finance_code": null,
         "created_date": new Date().toISOString(),
         "created_by": "00000000-0000-0000-0000-000000000000",
         "last_modified_by": "",
@@ -663,6 +679,7 @@ export const seedLibModalities: ILibModality[] = [
     {
         "id": 17,
         "modality_name": "KKB",
+        "finance_code": null,
         "created_date": new Date().toISOString(),
         "created_by": "00000000-0000-0000-0000-000000000000",
         "last_modified_by": "",
@@ -678,6 +695,7 @@ export const seedLibModalities: ILibModality[] = [
     {
         "id": 18,
         "modality_name": "KSB",
+        "finance_code": null,
         "created_date": new Date().toISOString(),
         "created_by": "00000000-0000-0000-0000-000000000000",
         "last_modified_by": "",
@@ -693,6 +711,7 @@ export const seedLibModalities: ILibModality[] = [
     {
         "id": 19,
         "modality_name": "PAMANA (2020 onwards)",
+        "finance_code": null,
         "created_date": new Date().toISOString(),
         "created_by": "00000000-0000-0000-0000-000000000000",
         "last_modified_by": "",
@@ -708,6 +727,7 @@ export const seedLibModalities: ILibModality[] = [
     {
         "id": 20,
         "modality_name": "KKB 2020",
+        "finance_code": null,
         "created_date": new Date().toISOString(),
         "created_by": "00000000-0000-0000-0000-000000000000",
         "last_modified_by": "",
@@ -723,6 +743,7 @@ export const seedLibModalities: ILibModality[] = [
     {
         "id": 21,
         "modality_name": "NCDDP-AF",
+        "finance_code": null,
         "created_date": new Date().toISOString(),
         "created_by": "00000000-0000-0000-0000-000000000000",
         "last_modified_by": "",
@@ -738,6 +759,7 @@ export const seedLibModalities: ILibModality[] = [
     {
         "id": 22,
         "modality_name": "PMNP",
+        "finance_code": null,
         "created_date": new Date().toISOString(),
         "created_by": "00000000-0000-0000-0000-000000000000",
         "last_modified_by": "",
@@ -753,6 +775,7 @@ export const seedLibModalities: ILibModality[] = [
     {
         "id": 23,
         "modality_name": "KKB-CDD",
+        "finance_code": null,
         "created_date": new Date().toISOString(),
         "created_by": "00000000-0000-0000-0000-000000000000",
         "last_modified_by": "",
@@ -768,6 +791,7 @@ export const seedLibModalities: ILibModality[] = [
     {
         "id": 24,
         "modality_name": "PAG-ABOT",
+        "finance_code": null,
         "created_date": new Date().toISOString(),
         "created_by": "00000000-0000-0000-0000-000000000000",
         "last_modified_by": "",
@@ -783,6 +807,7 @@ export const seedLibModalities: ILibModality[] = [
     {
         "id": 25,
         "modality_name": "CFW",
+        "finance_code": null,
         "created_date": new Date().toISOString(),
         "created_by": "00000000-0000-0000-0000-000000000000",
         "last_modified_by": "",
@@ -2155,7 +2180,6 @@ export const seedExpense: ILibExpense[] = [
 export async function seedData() {
     try {
         await tblBudgetYear.bulkPut(seedBudgetYear);
-        await tblPAP.bulkPut(seedPAP);
         await tblAllotmentClass.bulkPut(seedAllotmentClass);
         await tblAppropriationSource.bulkPut(seedAppropriationSource);
         await tblAppropriationType.bulkPut(seedAppropriationType);

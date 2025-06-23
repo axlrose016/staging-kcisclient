@@ -1,5 +1,5 @@
-import { getOfflineListData } from "./offline-fetch";
+import { getOfflineLibListData, getOfflineListData } from "./offline-fetch";
 
-export const getOfflineLibModules = getOfflineListData('modules');
-export const getOfflineLibRoles = getOfflineListData('roles');
-export const getOfflineLibPermissions = getOfflineListData('permissions');
+export const getOfflineLibModules = getOfflineLibListData('modules');
+export const getOfflineLibRoles = getOfflineLibListData('roles');
+export const getOfflineLibPermissions = getOfflineLibListData('permissions');

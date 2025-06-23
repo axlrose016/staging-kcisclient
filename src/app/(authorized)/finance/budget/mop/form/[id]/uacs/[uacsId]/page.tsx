@@ -15,7 +15,7 @@ import { FormDropDown } from "@/components/forms/form-dropdown"
 import { LibraryOption } from "@/components/interfaces/library-interface"
 import { getOfflineLibAllotmentClass, getOfflineLibComponent, getOfflineLibExpense, getOfflineLibLevel } from "@/components/_dal/offline-options"
 import { dxFetchData } from "@/components/_dal/external-apis/dxcloud"
-import { FinanceService } from "@/app/(authorized)/finance/FinanceService"
+import { FinanceService } from "@/components/services/FinanceService"
 import { IAllocationUacs, IMonthlyObligationPlan } from "@/db/offline/Dexie/schema/finance-service"
 import FormAllocationUasc from "@/app/(authorized)/finance/budget/allocation/form/[id]/uacs/[uacsId]/page"
 import { NumericFormat } from "react-number-format"
@@ -125,7 +125,7 @@ export default function FormMonthlyObligationPlan() {
   }
 
   //UI RENDERER (NOT YET SURE IF WE FULLY IMPLEMENT THIS)
-  const validateAmount = useWatch({
+  const monthlyAmounts = useWatch({
     control: form.control,
     name: [
       "amt_jan",
@@ -141,20 +141,28 @@ export default function FormMonthlyObligationPlan() {
       "amt_nov",
       "amt_dec"
     ]
-  }).reduce((acc, value) => acc + (value || 0), 0);
+  });
 
+const validateAmount = monthlyAmounts.reduce((acc, value) => acc + (value || 0), 0);
+
+const remainingAmount = grandTotal - validateAmount;
 
   return (
     <div className="container mx-auto">
-      <fieldset disabled={true}>
-        <FormAllocationUasc/>
-      </fieldset>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-1 py-5">
+        <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-1 py-5">
         <Card className="max-w-full">
           <CardHeader className="relative">
             <CardDescription>Total Allocated Plan Amount</CardDescription>
             <CardTitle className="@[250px]/card:text-3xl text-2xl font-semibold tabular-nums">
               {formatPHP(validateAmount)}
+            </CardTitle>
+          </CardHeader>
+        </Card>
+        <Card className="max-w-full">
+          <CardHeader className="relative">
+            <CardDescription>Remaining Allocated Plan Amount</CardDescription>
+            <CardTitle className="@[250px]/card:text-3xl text-2xl font-semibold tabular-nums">
+              {formatPHP(remainingAmount)}
             </CardTitle>
           </CardHeader>
         </Card>
@@ -168,7 +176,7 @@ export default function FormMonthlyObligationPlan() {
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)}>
               <CardContent className="space-y-6">
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 lg:grid-cols-12 gap-1">
+                <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1">
                   <FormField
                       control={form.control}
                       name="amt_jan"
@@ -565,6 +573,9 @@ export default function FormMonthlyObligationPlan() {
           </Form>
         </CardContent>
       </Card>
+      <fieldset className="py-5" disabled={true}>
+        <FormAllocationUasc/>
+      </fieldset>
     </div>
   )
 }

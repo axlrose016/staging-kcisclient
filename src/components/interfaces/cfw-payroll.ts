@@ -18,14 +18,14 @@ export interface ICFWPayroll {
 }
 
 export interface ICFWPayrollBene {
-  id: string; 
+  id: string;
   bene_id: string;
-  daily_time_record_id: string;   
-  daily_time_record_reviewed_date: string;  
-  accomplishment_report_id: string;   
-  accomplishment_report_reviewed_date: string;  
-  period_cover_from: Date;   
-  period_cover_to: Date;   
+  daily_time_record_id: string;
+  daily_time_record_reviewed_date: string;
+  accomplishment_report_id: string;
+  accomplishment_report_reviewed_date: string;
+  period_cover_from: Date;
+  period_cover_to: Date;
   operation_status: string;
   operation_status_date: string | null;
   operation_reviewed_by: string | null; //new
@@ -51,20 +51,21 @@ export interface ICFWPayrollBene {
 
 export interface ISubmissionLog {
   id: string;
-  record_id: string;
-  bene_id: string;
-  module: string;
-  comment: string;
-  status: string;
-  status_date: string | null;
-  created_date: string;
-  created_by: string;
-  last_modified_date?: string | null;
-  last_modified_by?: string | null;
-  push_status_id?: number;
-  push_date?: string;
-  deleted_date?: string | null;
-  deleted_by?: string | null;
-  is_deleted?: boolean;
-  remarks?: string | null;
+  record_id: string;//
+  bene_id: string | undefined | null;//
+  module: string;//
+  comment: string;//
+  status_id: number;//
+  status_date: string | null;//
+  created_date: string;//
+  created_by: string;//
+  last_modified_date?: string | null; //
+  last_modified_by?: string | null;//
+  push_status_id?: number;//
+  push_date?: string;//
+  deleted_date?: string | null;//
+  deleted_by?: string | null;//
+  is_deleted?: boolean;//
+  remarks?: string | null;//
+  user_id?: string | null
 }

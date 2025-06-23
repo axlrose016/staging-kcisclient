@@ -13,6 +13,9 @@ import { dexieDb } from '@/db/offline/Dexie/databases/dexieDb';
 import { getSession } from '@/lib/sessions-client';
 import { SessionPayload } from '@/types/globals';
 import Image from 'next/image';
+import { DTRService } from './service';
+import { toast } from '@/hooks/use-toast';
+import { libDb } from '@/db/offline/Dexie/databases/libraryDb';
 
 const _session = await getSession() as SessionPayload;
 
@@ -72,8 +75,10 @@ const columns = [
 
 export default function DailyTimeRecordPage() {
 
+    const service = new DTRService();
     const router = useRouter();
     const [data, setData] = useState<any[]>([]);
+    const [session, setSession] = useState<SessionPayload>();
 
     const getUsers = async () => {
         const results = await dexieDb.person_profile.where('modality_id')
@@ -81,18 +86,35 @@ export default function DailyTimeRecordPage() {
         console.log('getUsers > results', results)
         const merged = await Promise.all(
             results.map(async (a) => {
-                const b = await dexieDb.lib_school_profiles.where("id").equals(a.school_id!).first()
+                const b = await libDb.lib_school_profiles.where("id").equals(a.school_id!).first()
                 if (b) {
                     return {
                         ...b,    // fields from tableB (same `id`)
                         ...a   // fields from tableA
                     };
                 }
-                return null;
+                return a;
             })
         );
         return merged
     };
+
+
+    useEffect(() => {
+        (async () => {
+            await getResults()
+            handleOnRefresh()
+        })();
+    }, [session])
+
+
+    const getResults = async () => {
+        const result = await getUsers()
+        console.log('getResults > result', result)
+        setData(result)
+        return result;
+    };
+
 
     useEffect(() => {
         console.log('DTR: session', _session)
@@ -102,19 +124,45 @@ export default function DailyTimeRecordPage() {
         } else {
             (async () => {
                 const _session = await getSession() as SessionPayload;
-                console.log('_session', _session)
-
+                setSession(_session)
                 try {
                     if (!dexieDb.isOpen()) await dexieDb.open(); // Ensure DB is open 
                 } catch (error) {
                     console.error('Error fetching data:', error);
                 }
-                const user = await getUsers()
-                setData(user)
-                console.log('getUsers', user)
+                console.log('_session', _session)
             })();
         }
     }, [])
+
+
+    const handleOnRefresh = async () => {
+        try {
+
+            if (!session) {
+                console.log('handleOnRefresh > session is not available');
+                return;
+            }
+
+            const results = await service.syncDLProfile(`person_profile/view/by_supervisor/${session.id}/`) ;
+            if (!results) {
+                console.log('Failed to fetch time records');
+                return;
+            }
+
+            await getResults();
+        } catch (error) {
+            console.error('Error syncing time records:', error);
+            toast({
+                variant: "warning",
+                title: "Unable to Fetch Latest Data",
+                description: error instanceof Error
+                    ? `Error: ${error.message}`
+                    : "Unable to sync DTR records. Please try logging out and back in to refresh your session.",
+            });
+        }
+    };
+
 
     const handleEdit = (row: any) => {
         console.log('Edit:', row);
@@ -158,11 +206,9 @@ export default function DailyTimeRecordPage() {
                     <div className="min-h-screen">
                         <AppTable
                             data={data}
-                            columns={columns}
-                            onEditRecord={handleEdit}
-                            onDelete={handleDelete}
-                            onRowClick={handleRowClick}
-                            onAddNewRecord={handleAddNewRecord}
+                            columns={columns} 
+                            onRowClick={handleRowClick} 
+                            onRefresh={handleOnRefresh}
                         />
                     </div>
                 </div>

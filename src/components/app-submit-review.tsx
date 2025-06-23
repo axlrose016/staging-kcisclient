@@ -14,15 +14,16 @@ import { Alert, AlertDescription, AlertTitle } from './ui/alert'
 import { SessionPayload } from '@/types/globals'
 import { IRoles } from './interfaces/library-interface'
 import { dexieDb } from '@/db/offline/Dexie/databases/dexieDb'
+import { libDb } from '@/db/offline/Dexie/databases/libraryDb'
 
 
 interface IReview {
     id: string | undefined,
     record_id: string | undefined,
-    bene_id: string | undefined,
+    bene_id: string | undefined | null,
     module: string | undefined,
     comment: string | undefined,
-    status: string | undefined,
+    status_id: number | string | undefined,
     status_date: string | null | undefined,
     created_date: string | null | undefined,
     created_by: string | undefined
@@ -65,14 +66,14 @@ function AppSubmitReview(props: IAppSubmitReviewProps) {
 
     useEffect(() => {
         (async () => {
-            const r = await dexieDb.roles.toArray();
+            const r = await libDb.roles.toArray();
             setRoles(r)
         })();
 
         setCurrentReview(review);
         setSession(session)
 
-        if (session?.userData.role == "Guest") {
+        if (["Guest", "CFW Beneficiary"].includes(session?.userData.role!)) {
             setShowHistory(true)
         } else {
             setShowHistory(false)
@@ -91,14 +92,14 @@ function AppSubmitReview(props: IAppSubmitReviewProps) {
         setCurrentReview({
             ...currentReview,
             comment: "",
-            status: ""
+            status_id: 0
         })
     };
 
-    const hasStatus = Boolean(currentReview.status);
+    const hasStatus = Boolean(currentReview.status_id);
     // console.log('Appsubmission > session', session, !session, activeSession?.userData.role == "Guest", showHistory)
 
-    if (!session || (activeSession?.userData.role == "Guest" && review_logs.length == 0)) {
+    if (!session || !activeSession?.userData?.role || (["Guest", "CFW Beneficiary"].includes(activeSession.userData.role) && review_logs.length === 0)) {
         return <></>
     }
 
@@ -107,7 +108,7 @@ function AppSubmitReview(props: IAppSubmitReviewProps) {
             <hr className='h-1/5 my-6 bg-black' />
             <div className="flex justify-between items-start md:items-center">
                 <div className="flex flex-col md:flex-row items-center gap-3">
-                    <h3 className="text-lg self-start font-semibold">{title}</h3> 
+                    <h3 className="text-lg self-start font-semibold">{title}</h3>
                 </div>
 
 
@@ -165,9 +166,11 @@ function AppSubmitReview(props: IAppSubmitReviewProps) {
 
                     <div className="relative w-full sm:w-[200px]">
                         <Select
-                            value={currentReview.status || ''}
+                            
+                            value={currentReview.status_id || 0 || ''}
+                            
                             onValueChange={(value) => handleReviewChange({
-                                status: value,
+                                status_id: value,
                                 status_date: new Date().toISOString()
                             })}
                         >
@@ -192,7 +195,7 @@ function AppSubmitReview(props: IAppSubmitReviewProps) {
                 </div>
             </>}
 
-            {currentReview.status !== "" && <ReviewDialog
+            {currentReview.status_id !== 0 && <ReviewDialog
                 options={options}
                 open={isDialogOpen}
                 onOpenChange={setIsDialogOpen}
@@ -310,11 +313,11 @@ export function ReviewLogs({ logs, options }: ReviewLogsProps) {
                 <ScrollArea>
                     <div className="space-y-4">
                         {logs.map((log, index) => {
-                            const status = options.find(i => i.id == log.status)
+                            const status = options.find(i => Number(i.id) == Number(log.status_id))
                             return <div key={log.id || index} className="border-b pb-3 last:border-b-0 last:pb-0">
                                 <div className="flex justify-between items-start mb-2">
                                     <div className="flex items-center">
-                                        {log.status && <StatusBadge status={status?.name ?? ""} className="mr-2" />}
+                                        {log.status_id && <StatusBadge status={status?.name ?? ""} className="mr-2" />}
                                         {log.created_by && (
                                             <span className="text-sm font-medium">{log.created_by}</span>
                                         )}
@@ -348,7 +351,7 @@ interface ReviewDialogProps {
 }
 
 export function ReviewDialog({ open, onOpenChange, review, onConfirm, options }: ReviewDialogProps) {
-    const status = options.find(i => i.id == review.status)
+    const status = options.find(i => i.id == review.status_id)
     const dialogTitle = `Confirm Submission`;
 
     const dialogDescription = status.name

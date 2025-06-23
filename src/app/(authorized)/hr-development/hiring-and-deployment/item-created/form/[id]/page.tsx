@@ -23,7 +23,7 @@ import { FormDropDown } from "@/components/forms/form-dropdown"
 import { LibraryOption } from "@/components/interfaces/library-interface"
 import { getOfflineLibEmploymentStatus, getOfflineLibModalityOptions, getOfflineLibPosition } from "@/components/_dal/offline-options"
 import { lib_modality } from "@/db/schema/libraries"
-import { HRService } from "@/app/(authorized)/hr-development/HRService"
+import { HRService } from "@/components/services/HRService"
 
 const formSchema = z.object({
   id: z.string(),

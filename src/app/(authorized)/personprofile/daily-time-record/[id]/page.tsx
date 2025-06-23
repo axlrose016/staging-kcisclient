@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Clock, Plus, Trash2, Save, X, Printer, Download, SquareArrowUpRight, SquareArrowUpRightIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,28 +24,29 @@ import { ICFWPayrollBene, ISubmissionLog } from '@/components/interfaces/cfw-pay
 import { getOfflineLibStatuses } from '@/components/_dal/offline-options';
 import { v4 as uuidv4 } from 'uuid';
 import { v5 as uuidv5 } from 'uuid';
-import SqlPage from '@/components/sql-example';
 import { DTRService } from '../service';
+import { libDb } from '@/db/offline/Dexie/databases/libraryDb';
+import { ARService } from '../../accomplishment-report/service';
 
 
 export const DTRcolumns = [
     {
-        id: 'created_date',
+        id: 'log_inX',
         header: '',
-        accessorKey: 'created_date',
+        accessorKey: 'log_in',
         filterType: 'text',
         sortable: true,
         cell: (value: Date | undefined) => {
             if (value) {
-                return formatInTimeZone(value, 'UTC', 'MMM dd');
+                return format(value, 'MMM dd');
             }
             return "-";
         },
     },
     {
-        id: 'created_dateX',
+        id: 'log_inX2',
         header: 'Day',
-        accessorKey: 'created_date',
+        accessorKey: 'log_in',
         filterType: 'text',
         sortable: true,
         cell: (value: Date | undefined) => {
@@ -61,6 +62,18 @@ export const DTRcolumns = [
         accessorKey: 'log_in',
         filterType: 'text',
         sortable: true,
+        dataType: 'datetime',
+        validation: (getValues: any) => ({
+            required: 'Time in is required.',
+            validate: {
+                isBeforeLogout: (value: any) => {
+                    const log_out = getValues('log_out');
+                    if (!log_out || !value) return true;
+                    return new Date(value) <= new Date(log_out) || 'Time in cannot be after Time out.';
+                }
+            }
+        }),
+        validationTrigger: 'log_out',
         cell: (value: Date | undefined) => {
             if (value) {
                 return format(value, "HH:mm");
@@ -75,6 +88,18 @@ export const DTRcolumns = [
         accessorKey: 'log_out',
         filterType: 'text',
         sortable: true,
+        dataType: 'datetime',
+        validation: (getValues: any) => ({
+            required: 'Time out is required.',
+            validate: {
+                isAfterLogin: (value: any) => {
+                    const log_in = getValues('log_in');
+                    if (!log_in || !value) return true;
+                    return new Date(value) >= new Date(log_in) || 'Time out cannot be before Time in.';
+                }
+            }
+        }),
+        validationTrigger: 'log_in',
         cell: (value: Date | undefined) => {
             if (value) {
                 return format(value, "HH:mm");
@@ -116,7 +141,11 @@ export const DTRcolumns = [
         accessorKey: 'remarks',
         filterType: 'text',
         sortable: true,
-        className: "text-center"
+        className: "text-center",
+        validation: {
+            required: 'Remarks is required.',
+            maxLength: { value: 255, message: 'Remarks must be 255 characters or less.' }
+        },
     },
 ]
 
@@ -124,7 +153,7 @@ type IUser = IPersonProfile & ILibSchoolProfiles;
 
 export default function DailyTimeRecordUser() {
 
-    const dtrservice = new DTRService();
+    const service = new DTRService();
 
     const params = useParams<{ id: string }>()
     const router = useRouter()
@@ -185,6 +214,7 @@ export default function DailyTimeRecordUser() {
 
         (async () => {
             const _session = await getSession() as SessionPayload;
+            console.log('session', _session)
             setSession(_session);
             try {
                 if (!dexieDb.isOpen()) await dexieDb.open(); // Ensure DB is open 
@@ -192,15 +222,19 @@ export default function DailyTimeRecordUser() {
                 console.error('Error fetching data:', error);
             }
             const statuses = await getOfflineLibStatuses();
-            const filteredStatuses = statuses.filter(status => [2, 10, 11, 10, 5, 17].includes(status.id));
+            const filteredStatuses = statuses.filter(status => [2, 10].includes(status.id));
             console.log('filteredStatuses', filteredStatuses)
             setStatusesOptions(filteredStatuses);
 
             const user = await dexieDb.person_profile.where('user_id')
                 .equals(params!.id).first();
 
-            const period_cover = format(getInitialDateRange().from!.toISOString(), 'MMM dd') + "-" + format(getInitialDateRange().to!.toISOString(), 'dd, yyyy')
-            const r = uuidv5(period_cover, user!.id)
+            let period_cover = "";
+            let r = "";
+            if (date?.from && date?.to && user?.id) {
+                period_cover = format(new Date(date!.from!)!.toISOString(), 'yyyyMMdd') + "-" + format(new Date(date!.to!)!.toISOString(), 'yyyyMMdd')
+                r = uuidv5("daily time record" + "-" + period_cover, user.id);
+            }
 
             const logsQuery = await dexieDb.submission_log.where("record_id").equals(r)
             const logs = await logsQuery.sortBy("created_date")
@@ -222,35 +256,52 @@ export default function DailyTimeRecordUser() {
             console.log('ar', { params, pb })
 
             const merge = {
-                ...await dexieDb.lib_school_profiles.where("id").equals(user!.school_id!).first(),
+                ...await libDb.lib_school_profiles.where("id").equals(user!.school_id!).first(),
                 ...user
             };
             setUser(merge);
+
+
+            const assessment = await new ARService().syncDLWorkplan(`work_plan/view/by_bene/${merge.id}/`);
+            if (!assessment) {
+                toast({
+                    variant: "destructive",
+                    title: "Assessment not found",
+                    description: "Please create an assessment first",
+                });
+            }
+
+
         })();
-    }, [])
+    }, [date])
 
 
     useEffect(() => {
         (async () => {
-            setData(await getResults())
+            await getResults()
+            handleOnRefresh()
             console.log('date', date)
         })();
-    }, [date, user])
+    }, [date, user, session])
 
     const getResults = async () => {
         const results = await dexieDb.cfwtimelogs
-            .where('created_by')
-            .equals(user?.email ?? "")
+            .where('record_id')
+            .equals(user?.user_id ?? "")
             .and(log => {
                 const logDate = new Date(log.log_in);
                 return logDate >= date!.from! && logDate <= date!.to!;
             })
             .sortBy("created_date"); // Ascending: oldest → latest  
-        console.log('getResults', results)
 
-        setTimeout(() => handleOnRefresh(), 100)
+        setData(results)
+        console.log('getResults', { results, user: user?.email, date: date!.from!, date2: date!.to! })
         return results;
     };
+
+    useEffect(() => {
+        console.log('data', data)
+    }, [data])
 
 
     const handleEdit = (row: ICFWTimeLogs) => {
@@ -258,6 +309,7 @@ export default function DailyTimeRecordUser() {
             console.log('Edit:', row);
             await dexieDb.cfwtimelogs.put({
                 ...row,
+                push_status_id: 0,
                 last_modified_by: session!.userData!.email!,
                 last_modified_date: new Date().toISOString()
             }, 'id')
@@ -276,16 +328,47 @@ export default function DailyTimeRecordUser() {
     //     router.push(`/${baseUrl}/${row.user_id}`);
     // };
 
-    const handleAddNewRecord = (newRecord: any) => {
-        console.log('handleAddNewRecord', newRecord)
+    const handleAddNewRecord = (row: any) => {
+        (async () => {
+            console.log('handleAddNewRecord', row);
+            await dexieDb.cfwtimelogs.put({
+                ...row,
+                log_in: new Date(row.log_in).toISOString(),
+                log_out: new Date(row.log_out).toISOString(),
+                id: uuidv4(),
+                log_type: "IN",
+                work_session: 1,
+                total_work_hours: 0,
+                status: "Pending",
+                record_id: user.user_id,
+                created_date: new Date().toISOString(),
+                created_by: session!.userData!.email!,
+                last_modified_by: session!.userData!.email!,
+                push_status_id: 0,
+                is_deleted: false,
+                last_modified_date: new Date().toISOString(),
+                push_date: new Date().toISOString(),
+                deleted_date: null,
+                deleted_by: null
+            }, 'id')
+
+            toast({
+                variant: "default",
+                title: "Add New Record  ",
+                description: "Record has been added!",
+            });
+            setData(await getResults())
+        })();
     };
 
 
     const handleSubmitReview = () => {
+        const module = "daily time record";
         (async () => {
+
             try {
-                const period_cover = format(getInitialDateRange().from!.toISOString(), 'MMM dd') + "-" + format(getInitialDateRange().to!.toISOString(), 'dd, yyyy')
-                const record_id = uuidv5(period_cover, user!.id)
+                const period_cover = format(new Date(date!.from!)!.toISOString(), 'yyyyMMdd') + "-" + format(new Date(date!.to!)!.toISOString(), 'yyyyMMdd')
+                const record_id = uuidv5(module + "-" + period_cover, user.id);
                 console.log('period_cover', period_cover, record_id)
 
                 const raw = {
@@ -293,7 +376,7 @@ export default function DailyTimeRecordUser() {
                     id: uuidv4(),
                     record_id: record_id,
                     bene_id: user!.id,
-                    module: "daily time record",
+                    module: module,
                     created_date: new Date().toISOString(),
                     created_by: session!.userData!.email!,
                     push_status_id: 0,
@@ -310,8 +393,8 @@ export default function DailyTimeRecordUser() {
                         daily_time_record_reviewed_date: new Date().toISOString(),
                         accomplishment_report_id: payrollbene?.accomplishment_report_id || "",
                         accomplishment_report_reviewed_date: payrollbene?.accomplishment_report_reviewed_date || "",
-                        period_cover_from: getInitialDateRange().from!,
-                        period_cover_to: getInitialDateRange().to!,
+                        period_cover_from: date?.from!,
+                        period_cover_to: date?.to!,
                         operation_status: "",
                         operation_status_date: "",
                         odnpm_status: "",
@@ -322,7 +405,8 @@ export default function DailyTimeRecordUser() {
                         date_received: "",
                         operation_reviewed_by: "",
                         odnpm_reviewed_by: "",
-                        finance_reviewed_by: ""
+                        finance_reviewed_by: "",
+                        push_status_id: 0,
                     }
                     console.log('review', rev)
                     await dexieDb.cfwpayroll_bene.put(rev)
@@ -346,15 +430,44 @@ export default function DailyTimeRecordUser() {
 
 
     const handleOnRefresh = async () => {
-        const results = await dtrservice.syncDownload({
-            "person_profile_id": user.user_id
-        })
-        setData(results as any);
-    }
+        try {
+            if (!user?.user_id) {
+                console.log('handleOnRefresh > user is loading or invalid');
+                return;
+            }
+
+            if (!session) {
+                console.log('handleOnRefresh > session is not available');
+                return;
+            }
+
+            const results = await service.syncDLTimeLogs('cfwtimelogs/view/multiple/', {
+                "person_profile_id": user.user_id
+            });
+
+
+            console.log('results', results)
+
+            if (!results) {
+                console.log('Failed to fetch time records');
+                return;
+            }
+
+            await getResults();
+        } catch (error) {
+            console.error('Error syncing time records:', error);
+            toast({
+                variant: "warning",
+                title: "Unable to Fetch Latest Data",
+                description: error instanceof Error
+                    ? `Error: ${error.message}`
+                    : "Unable to sync DTR records. Please try logging out and back in to refresh your session.",
+            });
+        }
+    };
 
 
     return (
-
         <Card>
             <CardHeader>
                 <CardTitle className="mb-2 flex flex-col md:flex-row items-center md:justify-between text-center md:text-left">
@@ -375,7 +488,7 @@ export default function DailyTimeRecordUser() {
 
                 <div className="min-h-screen">
 
-                    <div className="flex items-center space-x-4 mb-6">
+                    <div className="flex items-center space-x-4 mb-6 flex-wrap gap-1">
                         <Avatar>
                             <AvatarImage src="https://images.unsplash.com/photo-1494790108377-be9c29b29330" alt="User name" />
                             <AvatarFallback>{user?.first_name.charAt(0)}</AvatarFallback>
@@ -388,9 +501,9 @@ export default function DailyTimeRecordUser() {
                         <DatePickerWithRange
                             endIcon={<SquareArrowUpRightIcon onClick={() => {
                                 const period_cover = format(new Date(date!.from!)!.toISOString(), 'yyyyMMdd') + "-" + format(new Date(date!.to!)!.toISOString(), 'yyyyMMdd')
-                                router.push(`/personprofile/accomplishment-report/${user?.user_id}/${period_cover}`)
+                                router.push(`/personprofile/accomplishment-report/${user?.user_id}/${uuidv5("accomplishment report" + "-" + period_cover, user?.user_id ?? "")}`)
                             }} className="scale-116 mx-2 cursor-pointer" />}
-                            className={"bg-primary text-primary-foreground hover:bg-primary/90 p-[6px] rounded-md px-2"}
+                            className={"bg-primary text-primary-foreground hover:bg-primary/90 p-[5px] rounded-md px-1 cursor-pointer"}
                             value={date}
                             onChange={setDate}
                         />
@@ -398,11 +511,11 @@ export default function DailyTimeRecordUser() {
 
                         {lastStatus.status == "2" &&
                             <>
-                                <Button onClick={() => console.log('enteries', null)} size="icon" className="[&_svg]:size-[20px] flex items-center gap-2">
+                                <Button onClick={() => console.log('enteries', null)} size="icon" className="[&_svg]:size-[20px] flex items-center gap-2 !ml-0">
                                     <Printer />
                                 </Button>
 
-                                <Button onClick={() => console.log('enteries', null)} size="icon" className="[&_svg]:size-[20px] flex items-center gap-2">
+                                <Button onClick={() => console.log('enteries', null)} size="icon" className="[&_svg]:size-[20px] flex items-center gap-2 !ml-0">
                                     <Download />
                                 </Button>
                             </>}
@@ -413,13 +526,17 @@ export default function DailyTimeRecordUser() {
                         <AppTable
                             data={data}
                             columns={DTRcolumns}
-                            onEditRecord={!["CFW Beneficiary", "Guest"].includes(session?.userData?.role || "") ? handleEdit : undefined}
+                            onEditRecord={!["CFW Beneficiary", "Guest", "Administrator", "CFW Administrator"]
+                                .includes(session?.userData?.role || "") ? handleEdit : undefined}
                             onRefresh={handleOnRefresh}
+                            onAddNewRecord={["CFW Immediate Supervisor"].includes(session?.userData?.role || "") ? handleAddNewRecord : undefined}
+                            onUseFields={(columns) => columns.filter(col => ['log_in', 'log_out', 'remarks']
+                                .includes(col.id))}
                         />
                     </div>
 
-
                     <div className="no-print">
+                     
                         <AppSubmitReview
                             session={session!}
                             review_logs={submissionLogs}

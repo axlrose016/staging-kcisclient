@@ -1,8 +1,8 @@
 "use client"
 
-import React,{ useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { seedData } from "@/db/offline/Dexie/schema/library-service";
-import { cn, hashPassword } from "@/lib/utils"
+import { cn, ensureUint8Array, hashPassword } from "@/lib/utils"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -17,13 +17,13 @@ import { toast } from "@/hooks/use-toast"
 import { IUserData } from "@/components/interfaces/iuser"
 import { createSession } from "@/lib/sessions-client"
 import { useRouter } from 'next/navigation'
-import LoginService from "./LoginService";
+import LoginService from "../../components/services/LoginService";
 import { dexieDb } from "@/db/offline/Dexie/databases/dexieDb";
 import { useOnlineStatus } from "@/hooks/use-network";
 import Captcha from "@/components/general/captcha";
 import { Button } from "@/components/ui/button";
 import { set } from "date-fns";
-import UsersService from "@/components/dialogs/registration/UsersService";
+import UsersService from "@/components/services/UsersService";
 import { cloneDeep } from "lodash";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -31,6 +31,7 @@ import { Alert } from "@/components/ui/alert";
 import { Info } from "lucide-react";
 import { DatePicker } from "@/components/ui/date-picker";
 import { CustomDialog } from "@/components/ui/custom-dialog";
+import Link from "next/link";
 
 
 const formSchema = z.object({
@@ -92,7 +93,7 @@ export default function LoginPage() {
         const fetchData = async (endpoint: string) => {
           setIsLoadingResetButton(true);
           try {
-            debugger;
+            // debugger
 
             const response = await fetch(endpoint, {
               method: "POST",
@@ -155,6 +156,8 @@ export default function LoginPage() {
   //   setShowLoginButton(true);
   // }, [successMessage]);
   useEffect(() => {
+    localStorage.removeItem("userIdViewOnly")
+    localStorage.removeItem("person_profile")
     console.log("API: ", process.env.NEXT_PUBLIC_API_BASE_URL_KCIS)
 
     seedData();
@@ -175,6 +178,8 @@ export default function LoginPage() {
     try {
       const user = await getUserByEmail(data.email);
 
+      console.log('offlineLogin > user', { user, data })
+
       if (!user) {
         setIsLoading(false)
         return toast({
@@ -184,7 +189,13 @@ export default function LoginPage() {
         });
       }
 
-      const decryptedPassword = await hashPassword(data.password, user.salt);
+      let safeSalt = user.salt;
+      if (!(user.salt instanceof Uint8Array)) {
+        safeSalt = ensureUint8Array(user.salt);
+      }
+
+
+      const decryptedPassword = await hashPassword(data.password, safeSalt);
 
       if (
         user.password !== decryptedPassword ||
@@ -219,7 +230,7 @@ export default function LoginPage() {
 
       }
 
-      debugger;
+      // debugger
       await createSession(user.id, userData, "ABC123");
       // await createSession(user.id, userData, "ABC123");
 
@@ -257,7 +268,7 @@ export default function LoginPage() {
 
 
     setIsLoading(true);
-    // debugger;
+    debugger
     try {
 
       if (!verified) {
@@ -269,15 +280,16 @@ export default function LoginPage() {
         setIsLoading(false)
         return;
       }
-      debugger;
+      debugger
       if (isOnline) {
         const onlinePayload = await LoginService.onlineLogin(data.email, data.password);
-        // debugger;
+
+        debugger;
         if (onlinePayload) {
           const raw = await LoginService.getProfile(onlinePayload.user.id, onlinePayload.token);
           const onlineProfile = await LoginService.getProfile(raw.id, onlinePayload.token);
           console.log('onlineProfile', onlineProfile)
-          debugger;
+          debugger
           if (onlineProfile) {
 
             const p = cloneDeep(onlineProfile)
@@ -328,7 +340,7 @@ export default function LoginPage() {
 
 
             //       if (existingRecord) {
-            //         debugger;
+            //         // debugger
             //         await dexieDb.person_profile.update(onlineProfile.id, onlineProfile);
             //         await dexieDb.person_profile_sector.bulkPut(onlineProfile.person_profile_sector);
             //         await dexieDb.person_profile_disability.bulkPut(onlineProfile.person_profile_disability ?? []);
@@ -342,14 +354,14 @@ export default function LoginPage() {
             //         if (onlineProfile.person_profile_disability.length !== 0) {
             //           await dexieDb.person_profile_disability.bulkPut(onlineProfile.person_profile_disability);
             //         }
-            //         debugger;
+            //         // debugger
             //         if (onlineProfile.person_profile_family_composition.length !== 0) {
             //           for (let i = 0; i < onlineProfile.person_profile_family_composition.length; i++) {
             //             const family = onlineProfile.person_profile_family_composition[i];
             //             await dexieDb.person_profile_family_composition.add(family); // Save the object without raw_id
             //           }
             //         }
-            //         debugger;
+            //         // debugger
             //         if (onlineProfile.person_profile_sector.length !== 0) {
             //           await dexieDb.person_profile_sector.bulkPut(onlineProfile.person_profile_sector);
             //         }
@@ -369,17 +381,18 @@ export default function LoginPage() {
             //         delete p.attachments
 
             //         await dexieDb.person_profile.add(p);
-            //         debugger;
+            //         // debugger
             //         console.log("➕New record added to DexieDB:", { id: onlineProfile.id, profile: p });
-            //         debugger;
+            //         // debugger
             //       }
             //     } catch (error) {
             //       setIsLoading(false)
             //       console.log("Error saving to DexieDB:", error);
             //     }
             //   });
-            // debugger; 
+            // // debugger 
           }
+          debugger
           await createSession(onlinePayload.user.id, onlinePayload.user.userData, onlinePayload.token);
           toast({
             variant: "green",
@@ -503,7 +516,7 @@ export default function LoginPage() {
                       Forgot your password?
                     </a>
                   </div>
-                  <Input id="password" type="password" {...register("password")} name="password" required />
+                  <Input id="password" type="password" {...register("password")} name="password" required  className="normal-case"/>
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
@@ -521,14 +534,20 @@ export default function LoginPage() {
             </form>
 
             <div className="text-center text-sm">
-                  Don&apos;t have an account?{" "}
-                  <ButtonDialog
-                    dialogForm={RegistrationForm}
-                    label="Register"
-                    dialog_title="Welcome to KALAHI-CIDSS Information System"
-                    css="underline underline-offset-4 cursor-pointer text-primary"
-                  />
-                </div>
+              Don&apos;t have an account?{" "}
+              <ButtonDialog
+                dialogForm={RegistrationForm}
+                label="Register"
+                dialog_title="Welcome to KALAHI-CIDSS Information System"
+                css="underline underline-offset-4 cursor-pointer text-primary"
+              />
+             {/* <Link
+                href="/sign-up/guest"
+                className="text-sm text-blue-600 underline hover:text-blue-800"
+              >
+                Sign-Up
+              </Link> */}
+            </div>
 
             <div className="mt-8 text-balance text-center text-xs text-muted-foreground [&_a]:underline [&_a]:underline-offset-4 hover:[&_a]:text-primary">
               By clicking continue, you agree to our <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>

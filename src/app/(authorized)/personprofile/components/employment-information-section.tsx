@@ -1,20 +1,16 @@
 import { z } from "zod";
-import { personProfileFormSchema } from "./page";
-import { UseFormReturn } from "react-hook-form";
+import { useFormContext, UseFormReturn } from "react-hook-form";
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { FormDropDown } from "@/components/forms/form-dropdown";
 import { useEffect, useState } from "react";
 import { getOfflineLibIdCard } from "@/components/_dal/offline-options";
 import { LibraryOption } from "@/components/interfaces/library-interface";
+import { FormValues } from "../formv2/page";
 
-type FormValues = z.infer<typeof personProfileFormSchema>
-
-type Props = {
-  form: UseFormReturn<FormValues>;
-};
-
-export default function PersonProfileEmployment({ form }: Props) {
+export const EmploymentInformationSection = () => {
+    const [region, setRegion] = useState<LibraryOption[]>([]);
+    const { control, setValue, setError, clearErrors, watch } = useFormContext<FormValues>();
     const [idCardOption, setIdCardOption] = useState<LibraryOption[]>([])
 
     useEffect(() => {
@@ -32,20 +28,20 @@ export default function PersonProfileEmployment({ form }: Props) {
     return(
         <div className="space-y-3 pt-3">
             <FormField
-                control={form.control}
-                name="hasoccupation"
+                control={control}
+                name="employmentInformation.hasoccupation"
                 render={({ field }) => (
                     <FormItem className="flex items-center space-x-2">
                     <FormControl>
                         <Input
                         type="checkbox"
-                        id="hasoccupation"
+                        id="employmentInformation.hasoccupation"
                         checked={field.value ?? false}
                         onChange={field.onChange}
                         className="w-4 h-4 cursor-pointer"
                         />
                     </FormControl>
-                    <FormLabel htmlFor="hasoccupation" className="cursor-pointer">
+                    <FormLabel htmlFor="employmentInformation.hasoccupation" className="cursor-pointer">
                         With Current Occupation?
                     </FormLabel>
                     <FormMessage />
@@ -53,15 +49,15 @@ export default function PersonProfileEmployment({ form }: Props) {
                 )}
             />
            <FormField
-                control={form.control}
-                name="current_occupation"
+                control={control}
+                name="employmentInformation.current_occupation"
                 render={({ field }) => (
                     <FormItem>
                     <FormLabel>Occupation</FormLabel>
                     <FormControl>
                         <Input
                         placeholder="ENTER CURRENT OCCUPATION"
-                        readOnly={!form.watch("hasoccupation")}
+                        readOnly={!watch("employmentInformation.hasoccupation")}
                         {...field}
                         />
                     </FormControl>
@@ -71,16 +67,16 @@ export default function PersonProfileEmployment({ form }: Props) {
             />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
-                    control={form.control}
-                    name="id_card"
+                    control={control}
+                    name="employmentInformation.id_card"
                     render={({ field }) => (
                     <FormItem>
                         <FormLabel>Valid ID</FormLabel>
                         <FormControl>
                             <FormDropDown
-                            id="id_card"
+                            id="employmentInformation.id_card"
                             options={idCardOption}
-                            readOnly={!form.watch("hasoccupation")}
+                            readOnly={!watch("employmentInformation.hasoccupation")}
                             selectedOption={idCardOption.find(r => r.id === field.value)?.id || null}
                             onChange={(selected) => {
                             field.onChange(selected); 

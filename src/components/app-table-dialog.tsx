@@ -6,86 +6,108 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DialogFooter } from '@/components/ui/dialog';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { Calendar as CalendarIcon, ExternalLink, FileIcon, X, Type, Hash, Image, ListFilter } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { format, parseISO } from 'date-fns';
 
 interface EditRecordFormProps {
   columns: any[];
   initialData?: any;
   onSubmit: (values: any) => void;
   onCancel: () => void;
+  columnProps?: Record<string, any>;
 }
 
-
-export function formatDate(dateString: string): string {
-    try {
-      if (!dateString) return '';
-      const date = parseISO(dateString);
-      return format(date, 'PPP p'); // Feb 10, 2021, 10:45 AM
-    } catch (error) {
-      return dateString;
-    }
-  }
-
-export function AppTableDialogForm({ columns, initialData, onSubmit, onCancel }: EditRecordFormProps) {
-    const { register, handleSubmit, setValue, watch, reset, formState: { errors } } = useForm({
-      defaultValues: initialData || {}
+export function AppTableDialogForm({ columns, initialData, onSubmit, onCancel, columnProps }: EditRecordFormProps) {
+    const { register, handleSubmit, setValue, watch, reset, formState: { errors }, getValues, trigger } = useForm({
+      defaultValues: initialData || {},
+      mode: 'onChange'
     });
     
     const [inputTypes, setInputTypes] = useState<Record<string, string>>({});
-    const [dateValues, setDateValues] = useState<Record<string, Date | undefined>>({});
   
     useEffect(() => {
       const types: Record<string, string> = {};
-      const dates: Record<string, Date | undefined> = {};
-      
+      const defaultVals = initialData ? JSON.parse(JSON.stringify(initialData)) : {};
+  
       columns.forEach(column => {
-        if (column.id !== 'actions' && column.id !== 'select') {
-          types[column.id] = column.dataType || 'text';
-          
-          if (types[column.id] === 'datetime') {
-            const value = initialData?.[column.accessorKey];
-            if (value) {
-              try {
-                dates[column.id] = new Date(value);
-              } catch (e) {
-                console.error("Invalid date:", value);
+          if (column.id !== 'actions' && column.id !== 'select') {
+              const value = defaultVals[column.accessorKey];
+              let determinedType = 'text';
+  
+              if (column.dataType) {
+                  determinedType = column.dataType;
+              } else if (column.filterOptions && column.filterOptions.length > 0) {
+                  determinedType = 'select';
+              } else if (value !== null && value !== undefined) {
+                  if (typeof value === 'number') {
+                      determinedType = 'number';
+                  } else if (value instanceof Date) {
+                      determinedType = 'datetime';
+                  } else if (typeof value === 'string') {
+                      if (/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(value) && !isNaN(Date.parse(value))) {
+                          determinedType = 'datetime';
+                      }
+                  }
               }
+              types[column.id] = determinedType;
+  
+              if (determinedType === 'datetime') {
+                const formatForInput = (d: Date) => {
+                    const year = d.getFullYear();
+                    const month = (`0${d.getMonth() + 1}`).slice(-2);
+                    const day = (`0${d.getDate()}`).slice(-2);
+                    const hours = (`0${d.getHours()}`).slice(-2);
+                    const minutes = (`0${d.getMinutes()}`).slice(-2);
+                    return `${year}-${month}-${day}T${hours}:${minutes}`;
+                }
+
+                if (value) { // has initial value
+                    try {
+                        const d = new Date(value);
+                        if(!isNaN(d.getTime())) {
+                            defaultVals[column.accessorKey] = formatForInput(d);
+                        }
+                    } catch (e) {
+                        console.error("Invalid date:", value);
+                    }
+                } else if (!initialData) { // new record, no initial value
+                    defaultVals[column.accessorKey] = formatForInput(new Date());
+                }
             }
           }
-        }
       });
-      
+  
       setInputTypes(types);
-      setDateValues(dates);
-      
-      Object.entries(dates).forEach(([key, value]) => {
-        if (value) {
-          setValue(key, value.toISOString());
-        }
+      reset(defaultVals);
+    }, [columns, initialData, reset]);
+
+    useEffect(() => {
+      const subscription = watch((value, { name }) => {
+          if (!name) return;
+          const column = columns.find(c => c.accessorKey === name);
+          if (column && column.validationTrigger) {
+              const triggers = Array.isArray(column.validationTrigger) ? column.validationTrigger : [column.validationTrigger];
+              triggers.forEach((fieldName: string) => trigger(fieldName));
+          }
       });
-    }, [columns, initialData, setValue]);
+      return () => subscription.unsubscribe();
+    }, [watch, trigger, columns]);
   
     const formValues = watch();
   
     const handleTypeChange = (columnId: string, type: string) => {
+      const currentValue = getValues(columnId);
       setInputTypes(prev => ({ ...prev, [columnId]: type }));
       
       if (type === 'datetime') {
-        const now = new Date();
-        setDateValues(prev => ({ ...prev, [columnId]: now }));
-        setValue(columnId, now.toISOString());
+        setValue(columnId, '');
       } else if (type === 'number') {
         setValue(columnId, 0);
       } else if (type === 'file') {
@@ -98,13 +120,8 @@ export function AppTableDialogForm({ columns, initialData, onSubmit, onCancel }:
           setValue(columnId, '');
         }
       } else {
-        setValue(columnId, '');
+        setValue(columnId, currentValue ? String(currentValue) : '');
       }
-    };
-  
-    const handleDateChange = (columnId: string, date: Date | undefined) => {
-      setDateValues(prev => ({ ...prev, [columnId]: date }));
-      setValue(columnId, date?.toISOString() || '');
     };
   
     const isValidUrl = (string: string): boolean => {
@@ -115,7 +132,7 @@ export function AppTableDialogForm({ columns, initialData, onSubmit, onCancel }:
         return false;
       }
     };
-  
+
     const isImageUrl = (url: string): boolean => {
       return isValidUrl(url) && /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(url);
     };
@@ -143,7 +160,10 @@ export function AppTableDialogForm({ columns, initialData, onSubmit, onCancel }:
           {columns
             .filter(column => column.id !== 'actions' && column.id !== 'select')
             .map((column) => {
-              const currentType = column.dataType || inputTypes[column.id] || 'text';
+              const currentType = inputTypes[column.id] || 'text';
+              const validationRules = typeof column.validation === 'function'
+                ? column.validation(getValues)
+                : column.validation;
               
               return (
                 <div key={column.id} className="space-y-2">
@@ -152,245 +172,65 @@ export function AppTableDialogForm({ columns, initialData, onSubmit, onCancel }:
                   </Label>
                   
                   <div className="grid gap-2">
-                    {!column.dataType && (
+                    {currentType === 'text' && (
                       <div className="relative w-full">
-                        {currentType === 'text' && (
-                          <Input
-                            id={column.id}
-                            {...register(column.accessorKey, { required: true })}
-                            className={cn(
-                              "pr-9",
-                              errors[column.accessorKey] ? "border-destructive" : ""
-                            )}
-                          />
-                        )}
-                        
-                        {currentType === 'number' && (
-                          <Input
-                            id={column.id}
-                            type="number"
-                            {...register(column.accessorKey, { 
-                              required: true,
-                              valueAsNumber: true 
-                            })}
-                            className={cn(
-                              "pr-9",
-                              errors[column.accessorKey] ? "border-destructive" : ""
-                            )}
-                          />
-                        )}
-                        
-                        {currentType === 'file' && (
-                          <div className="space-y-2">
-                            <div className="flex gap-2">
-                              <div className="relative flex-1">
-                                <Input
-                                  id={column.id}
-                                  placeholder="Enter URL"
-                                  {...register(column.accessorKey, { 
-                                    required: true,
-                                    validate: value => isValidUrl(value) || "Please enter a valid URL"
-                                  })}
-                                  className={cn(
-                                    "pr-9",
-                                    errors[column.accessorKey] ? "border-destructive" : ""
-                                  )}
-                                />
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button
-                                      type="button"
-                                      variant="ghost"
-                                      size="icon"
-                                      className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                                    >
-                                      {getTypeIcon(currentType)}
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onClick={() => handleTypeChange(column.id, 'text')}>
-                                      <Type className="mr-2 h-4 w-4" /> Text
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleTypeChange(column.id, 'number')}>
-                                      <Hash className="mr-2 h-4 w-4" /> Number
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleTypeChange(column.id, 'file')}>
-                                      <Image className="mr-2 h-4 w-4" /> File URL
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleTypeChange(column.id, 'datetime')}>
-                                      <CalendarIcon className="mr-2 h-4 w-4" /> Date & Time
-                                    </DropdownMenuItem>
-                                    {column.filterOptions && (
-                                      <DropdownMenuItem onClick={() => handleTypeChange(column.id, 'select')}>
-                                        <ListFilter className="mr-2 h-4 w-4" /> Select
-                                      </DropdownMenuItem>
-                                    )}
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </div>
-                              {formValues[column.accessorKey] && isValidUrl(formValues[column.accessorKey]) && (
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  size="icon"
-                                  onClick={() => window.open(formValues[column.accessorKey], '_blank')}
-                                >
-                                  <ExternalLink className="h-4 w-4" />
-                                </Button>
-                              )}
-                            </div>
-                            
-                            {formValues[column.accessorKey] && isValidUrl(formValues[column.accessorKey]) && (
-                              <div className="relative rounded-md border overflow-hidden">
-                                {isImageUrl(formValues[column.accessorKey]) ? (
-                                  <img 
-                                    src={formValues[column.accessorKey]} 
-                                    alt="Preview"
-                                    className="w-full h-24 object-cover"
-                                  />
-                                ) : (
-                                  <div className="w-full h-24 bg-muted/30 flex items-center justify-center">
-                                    <FileIcon className="h-8 w-8 text-muted-foreground" />
-                                  </div>
-                                )}
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon"
-                                  className="absolute top-1 right-1 h-6 w-6 rounded-full bg-background/80"
-                                  onClick={() => setValue(column.accessorKey, '')}
-                                >
-                                  <X className="h-3 w-3" />
-                                </Button>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                        
-                        {currentType === 'datetime' && (
-                          <div className="relative">
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  className={cn(
-                                    "w-full justify-start text-left font-normal pr-9",
-                                    !dateValues[column.id] && "text-muted-foreground",
-                                    errors[column.accessorKey] ? "border-destructive" : ""
-                                  )}
-                                >
-                                  <CalendarIcon className="mr-2 h-4 w-4" />
-                                  {dateValues[column.id] ? (
-                                    formatDate(dateValues[column.id]?.toISOString() || '')
-                                  ) : (
-                                    <span>Pick a date</span>
-                                  )}
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0">
-                                <Calendar
-                                  mode="single"
-                                  selected={dateValues[column.id]}
-                                  onSelect={(date) => handleDateChange(column.id, date)}
-                                  initialFocus
-                                />
-                              </PopoverContent>
-                            </Popover>
-                            <input
-                              type="hidden"
-                              id={column.id}
-                              {...register(column.accessorKey, { required: true })}
-                            />
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon"
-                                  className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                                >
-                                  {getTypeIcon(currentType)}
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => handleTypeChange(column.id, 'text')}>
-                                  <Type className="mr-2 h-4 w-4" /> Text
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleTypeChange(column.id, 'number')}>
-                                  <Hash className="mr-2 h-4 w-4" /> Number
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleTypeChange(column.id, 'file')}>
-                                  <Image className="mr-2 h-4 w-4" /> File URL
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleTypeChange(column.id, 'datetime')}>
-                                  <CalendarIcon className="mr-2 h-4 w-4" /> Date & Time
-                                </DropdownMenuItem>
-                                {column.filterOptions && (
-                                  <DropdownMenuItem onClick={() => handleTypeChange(column.id, 'select')}>
-                                    <ListFilter className="mr-2 h-4 w-4" /> Select
-                                  </DropdownMenuItem>
-                                )}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
-                        )}
-                        
-                        {currentType === 'select' && column.filterOptions && (
-                          <div className="relative">
-                            <Select
-                              value={formValues[column.accessorKey] || ''}
-                              onValueChange={(value) => setValue(column.accessorKey, value)}
+                        <Input
+                          id={column.id}
+                          {...register(column.accessorKey, validationRules)}
+                          className={cn(
+                            "pr-9",
+                            errors[column.accessorKey] ? "border-destructive" : ""
+                          )}
+                        />
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
                             >
-                              <SelectTrigger className={cn(
-                                "pr-9",
-                                errors[column.accessorKey] ? "border-destructive" : ""
-                              )}>
-                                <SelectValue placeholder="Select an option" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {column.filterOptions.map((option: string) => (
-                                  <SelectItem key={option} value={option}>
-                                    {option}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon"
-                                  className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                                >
-                                  {getTypeIcon(currentType)}
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => handleTypeChange(column.id, 'text')}>
-                                  <Type className="mr-2 h-4 w-4" /> Text
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleTypeChange(column.id, 'number')}>
-                                  <Hash className="mr-2 h-4 w-4" /> Number
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleTypeChange(column.id, 'file')}>
-                                  <Image className="mr-2 h-4 w-4" /> File URL
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleTypeChange(column.id, 'datetime')}>
-                                  <CalendarIcon className="mr-2 h-4 w-4" /> Date & Time
-                                </DropdownMenuItem>
-                                {column.filterOptions && (
-                                  <DropdownMenuItem onClick={() => handleTypeChange(column.id, 'select')}>
-                                    <ListFilter className="mr-2 h-4 w-4" /> Select
-                                  </DropdownMenuItem>
-                                )}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
-                        )}
+                              {getTypeIcon(currentType)}
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleTypeChange(column.id, 'text')}>
+                              <Type className="mr-2 h-4 w-4" /> Text
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleTypeChange(column.id, 'number')}>
+                              <Hash className="mr-2 h-4 w-4" /> Number
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleTypeChange(column.id, 'file')}>
+                              <Image className="mr-2 h-4 w-4" /> File URL
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleTypeChange(column.id, 'datetime')}>
+                              <CalendarIcon className="mr-2 h-4 w-4" /> Date & Time
+                            </DropdownMenuItem>
+                            {column.filterOptions && (
+                              <DropdownMenuItem onClick={() => handleTypeChange(column.id, 'select')}>
+                                <ListFilter className="mr-2 h-4 w-4" /> Select
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    )}
                         
-                        {!['file', 'datetime', 'select'].includes(currentType) && (
-                          <DropdownMenu>
+                    {currentType === 'number' && (
+                      <div className="relative w-full">
+                        <Input
+                          id={column.id}
+                          type="number"
+                          {...register(column.accessorKey, { 
+                            ...validationRules,
+                            valueAsNumber: true 
+                          })}
+                          className={cn(
+                            "pr-9",
+                            errors[column.accessorKey] ? "border-destructive" : ""
+                          )}
+                        />
+                        <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button
                                 type="button"
@@ -421,151 +261,207 @@ export function AppTableDialogForm({ columns, initialData, onSubmit, onCancel }:
                               )}
                             </DropdownMenuContent>
                           </DropdownMenu>
-                        )}
                       </div>
                     )}
-                    
-                    {column.dataType && (
-                      <>
-                        {column.dataType === 'text' && (
-                          <Input
-                            id={column.id}
-                            {...register(column.accessorKey, { required: true })}
-                            className={errors[column.accessorKey] ? "border-destructive" : ""}
-                          />
-                        )}
                         
-                        {column.dataType === 'number' && (
-                          <Input
-                            id={column.id}
-                            type="number"
-                            {...register(column.accessorKey, { 
-                              required: true,
-                              valueAsNumber: true 
-                            })}
-                            className={errors[column.accessorKey] ? "border-destructive" : ""}
-                          />
-                        )}
-                        
-                        {column.dataType === 'file' && (
-                          <div className="space-y-2">
-                            <div className="flex gap-2">
-                              <Input
-                                id={column.id}
-                                placeholder="Enter URL"
-                                {...register(column.accessorKey, { 
-                                  required: true,
-                                  validate: value => isValidUrl(value) || "Please enter a valid URL"
-                                })}
-                                className={cn(
-                                  "flex-1",
-                                  errors[column.accessorKey] ? "border-destructive" : ""
-                                )}
-                              />
-                              {formValues[column.accessorKey] && isValidUrl(formValues[column.accessorKey]) && (
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  size="icon"
-                                  onClick={() => window.open(formValues[column.accessorKey], '_blank')}
-                                >
-                                  <ExternalLink className="h-4 w-4" />
-                                </Button>
+                    {currentType === 'file' && (
+                      <div className="space-y-2">
+                        <div className="flex gap-2">
+                          <div className="relative flex-1">
+                            <Input
+                              id={column.id}
+                              placeholder="Enter URL"
+                              {...register(column.accessorKey, { 
+                                ...validationRules,
+                                validate: {
+                                  ...(validationRules?.validate || {}),
+                                  validUrl: value => !value || isValidUrl(value) || "Please enter a valid URL"
+                                }
+                              })}
+                              className={cn(
+                                "pr-9",
+                                errors[column.accessorKey] ? "border-destructive" : ""
                               )}
-                            </div>
-                            
-                            {formValues[column.accessorKey] && isValidUrl(formValues[column.accessorKey]) && (
-                              <div className="relative rounded-md border overflow-hidden">
-                                {isImageUrl(formValues[column.accessorKey]) ? (
-                                  <img 
-                                    src={formValues[column.accessorKey]} 
-                                    alt="Preview"
-                                    className="w-full h-24 object-cover"
-                                  />
-                                ) : (
-                                  <div className="w-full h-24 bg-muted/30 flex items-center justify-center">
-                                    <FileIcon className="h-8 w-8 text-muted-foreground" />
-                                  </div>
-                                )}
+                            />
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
                                 <Button
                                   type="button"
                                   variant="ghost"
                                   size="icon"
-                                  className="absolute top-1 right-1 h-6 w-6 rounded-full bg-background/80"
-                                  onClick={() => setValue(column.accessorKey, '')}
+                                  className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
                                 >
-                                  <X className="h-3 w-3" />
+                                  {getTypeIcon(currentType)}
                                 </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleTypeChange(column.id, 'text')}>
+                                  <Type className="mr-2 h-4 w-4" /> Text
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleTypeChange(column.id, 'number')}>
+                                  <Hash className="mr-2 h-4 w-4" /> Number
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleTypeChange(column.id, 'file')}>
+                                  <Image className="mr-2 h-4 w-4" /> File URL
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleTypeChange(column.id, 'datetime')}>
+                                  <CalendarIcon className="mr-2 h-4 w-4" /> Date & Time
+                                </DropdownMenuItem>
+                                {column.filterOptions && (
+                                  <DropdownMenuItem onClick={() => handleTypeChange(column.id, 'select')}>
+                                    <ListFilter className="mr-2 h-4 w-4" /> Select
+                                  </DropdownMenuItem>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                          {formValues[column.accessorKey] && isValidUrl(formValues[column.accessorKey]) && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="icon"
+                              onClick={() => window.open(formValues[column.accessorKey], '_blank')}
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                        
+                        {formValues[column.accessorKey] && isValidUrl(formValues[column.accessorKey]) && (
+                          <div className="relative rounded-md border overflow-hidden">
+                            {isImageUrl(formValues[column.accessorKey]) ? (
+                              <img 
+                                src={formValues[column.accessorKey]} 
+                                alt="Preview"
+                                className="w-full h-24 object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-24 bg-muted/30 flex items-center justify-center">
+                                <FileIcon className="h-8 w-8 text-muted-foreground" />
                               </div>
                             )}
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="absolute top-1 right-1 h-6 w-6 rounded-full bg-background/80"
+                              onClick={() => setValue(column.accessorKey, '')}
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
                           </div>
                         )}
-                        
-                        {column.dataType === 'datetime' && (
-                          <div>
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  className={cn(
-                                    "w-full justify-start text-left font-normal",
-                                    !dateValues[column.id] && "text-muted-foreground",
-                                    errors[column.accessorKey] ? "border-destructive" : ""
-                                  )}
-                                >
-                                  <CalendarIcon className="mr-2 h-4 w-4" />
-                                  {dateValues[column.id] ? (
-                                    formatDate(dateValues[column.id]?.toISOString() || '')
-                                  ) : (
-                                    <span>Pick a date</span>
-                                  )}
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0">
-                                <Calendar
-                                  mode="single"
-                                  selected={dateValues[column.id]}
-                                  onSelect={(date) => handleDateChange(column.id, date)}
-                                  initialFocus
-                                />
-                              </PopoverContent>
-                            </Popover>
-                            <input
-                              type="hidden"
-                              id={column.id}
-                              {...register(column.accessorKey, { required: true })}
-                            />
-                          </div>
-                        )}
-                        
-                        {column.dataType === 'select' && column.filterOptions && (
-                          <Select
-                            value={formValues[column.accessorKey] || ''}
-                            onValueChange={(value) => setValue(column.accessorKey, value)}
-                          >
-                            <SelectTrigger className={cn(
-                              errors[column.accessorKey] ? "border-destructive" : ""
-                            )}>
-                              <SelectValue placeholder="Select an option" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {column.filterOptions.map((option: string) => (
-                                <SelectItem key={option} value={option}>
-                                  {option}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        )}
-                      </>
+                      </div>
                     )}
                     
-                    {errors[column.accessorKey] && (
-                      <p className="text-xs text-destructive">
-                        This field is required
-                      </p>
+                    {currentType === 'datetime' && (
+                      <div className="relative">
+                        <Input
+                          id={column.id}
+                          type="datetime-local"
+                          {...register(column.accessorKey, {
+                            ...validationRules,
+                            valueAsDate: true,
+                          })}
+                          className={cn(
+                            "pr-9",
+                            errors[column.accessorKey] ? "border-destructive" : ""
+                          )}
+                        />
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                            >
+                              {getTypeIcon(currentType)}
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleTypeChange(column.id, 'text')}>
+                              <Type className="mr-2 h-4 w-4" /> Text
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleTypeChange(column.id, 'number')}>
+                              <Hash className="mr-2 h-4 w-4" /> Number
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleTypeChange(column.id, 'file')}>
+                              <Image className="mr-2 h-4 w-4" /> File URL
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleTypeChange(column.id, 'datetime')}>
+                              <CalendarIcon className="mr-2 h-4 w-4" /> Date & Time
+                            </DropdownMenuItem>
+                            {column.filterOptions && (
+                              <DropdownMenuItem onClick={() => handleTypeChange(column.id, 'select')}>
+                                <ListFilter className="mr-2 h-4 w-4" /> Select
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    )}
+                    
+                    {currentType === 'select' && column.filterOptions && (
+                      <div className="relative">
+                        <Select
+                          value={formValues[column.accessorKey] || ''}
+                          onValueChange={(value) => setValue(column.accessorKey, value)}
+                        >
+                          <SelectTrigger className={cn(
+                            "pr-9",
+                            errors[column.accessorKey] ? "border-destructive" : ""
+                          )}>
+                            <SelectValue placeholder="Select an option" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {column.filterOptions.map((option: string) => (
+                              <SelectItem key={option} value={option}>
+                                {option}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                            >
+                              {getTypeIcon(currentType)}
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleTypeChange(column.id, 'text')}>
+                              <Type className="mr-2 h-4 w-4" /> Text
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleTypeChange(column.id, 'number')}>
+                              <Hash className="mr-2 h-4 w-4" /> Number
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleTypeChange(column.id, 'file')}>
+                              <Image className="mr-2 h-4 w-4" /> File URL
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleTypeChange(column.id, 'datetime')}>
+                              <CalendarIcon className="mr-2 h-4 w-4" /> Date & Time
+                            </DropdownMenuItem>
+                            {column.filterOptions && (
+                              <DropdownMenuItem onClick={() => handleTypeChange(column.id, 'select')}>
+                                <ListFilter className="mr-2 h-4 w-4" /> Select
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     )}
                   </div>
+                    
+                  {errors[column.accessorKey] && (
+                    <p className="text-xs text-destructive">
+                      {errors[column.accessorKey]?.message as string || "This field has an error."}
+                    </p>
+                  )}
                 </div>
               );
             })}

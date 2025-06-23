@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { IPositionItem } from '@/db/offline/Dexie/schema/hr-service';
 import { useRouter } from 'next/navigation';
 import React from 'react'
-import { HRService } from '../../HRService';
+import { HRService } from '../../../../../components/services/HRService';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';

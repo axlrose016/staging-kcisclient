@@ -19,6 +19,8 @@ import { IPersonProfile } from '@/components/interfaces/personprofile';
 import { v5 as uuidv5 } from 'uuid';
 import { Badge } from '@/components/ui/badge';
 import { ILibSchoolProfiles, ILibStatuses } from '@/components/interfaces/library-interface';
+import { libDb } from '@/db/offline/Dexie/databases/libraryDb';
+import { StatusBadge } from '@/components/app-submit-review';
 
 const KeyToken = process.env.NEXT_PUBLIC_DXCLOUD_KEY;
 const session = await getSession() as SessionPayload;
@@ -92,17 +94,18 @@ function PayrollAdmin() {
     // const [prov, setProv] = useState<any[]>()
     // const [muni, setMuni] = useState<any[]>()
 
-    const [period_cover_from, period_cover_to] = params?.['payroll-list']!.split('-').map(dateStr => {
+    const dateRange = params?.['payroll-list']!.split('-').map(dateStr => {
         const year = dateStr.substring(0, 4);
         const month = dateStr.substring(4, 6);
         const day = dateStr.substring(6, 8);
         return new Date(`${year}-${month}-${day}`);
     });
+    const [period_cover_from, period_cover_to] = dateRange || []; 
 
     // console.log('params!.list!', { period_cover_from, period_cover_to }) 
     useEffect(() => {
         (async () => {
-            setOptionStatus(await dexieDb.lib_statuses.toArray());
+            setOptionStatus(await libDb.lib_statuses.toArray());
 
             const response = await fetch("/api-libs/psgc/regions", {
                 headers: {
@@ -152,7 +155,7 @@ function PayrollAdmin() {
                             //     .equals(region!.region_code)
                             //     .first();
 
-                            const school = await dexieDb.lib_school_profiles
+                            const school = await libDb.lib_school_profiles
                                 .where("id")
                                 .equals(parseInt(personProfile!.school_id!.toString()))
                                 .first();
@@ -378,11 +381,12 @@ function PayrollBene() {
     }, [])
 
     const getResults = async (session: SessionPayload) => {
-        const user = await dexieDb.person_profile.where('id')
-            .equals(params!.id).first();
+        console.log('getResults > session', { session, params })
+        const user = await dexieDb.person_profile.where('user_id')
+            .equals(session!.id).first();
 
         const merge = {
-            ...await dexieDb.lib_school_profiles.where("id").equals(user!.school_id!).first(),
+            ...await libDb.lib_school_profiles.where("id").equals(user!.school_id!).first(),
             ...user
         }; 
         // console.log('getResults > user', { user, dtr, id: params!.id })
@@ -416,7 +420,7 @@ function PayrollBene() {
                         </div>  
                     </div>
 
-                    {session?.userData.role == "Guest" && (
+                    {["CFW Beneficiary"].includes(session?.userData.role!) && (
                         <>
                             <div className="my-10 grid grid-cols-2 gap-2 text-center">
                                 <div>

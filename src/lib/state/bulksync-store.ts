@@ -38,7 +38,8 @@ export interface ISummary {
 export interface IBulkSync {
   tag: string;
   url: string;
-  module: any;
+  module: () => any;
+  method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
   postAs?: "array" | "object";
   formdata?: (record: any) => Record<string, any>;
   cleanup?: (record: any) => any;
@@ -55,7 +56,11 @@ export interface ProgressStatus {
     success: number;
     failed: number;
     errors: { record: any; error_message: string }[];
-    state: "in progress" | "completed" | "error";
+    state: "idle" | "in progress" | "completed" | "error";
+    totalRecords?: number;
+    force?: boolean;
+    created_date?: string;
+    isSyncing?: boolean;
   };
 }
 
@@ -64,17 +69,13 @@ interface BulkSyncStore {
   tasks: IBulkSync[];
   progressStatus: ProgressStatus;
   summary: ISummary;
+  forceSync: boolean;
   setTasks: (tasks: IBulkSync[]) => void;
-  setProgressStatus: (
-    tag: string,
-    data: Partial<ProgressStatus[string]>
-  ) => void;
-  updateTaskProgress: (
-    tag: string,
-    data: Partial<ProgressStatus[string]>
-  ) => void;
+  setProgressStatus: (tag: string, data: Partial<ProgressStatus[string]>) => void;
+  updateTaskProgress: (tag: string, data: Partial<ProgressStatus[string]>) => void;
   resetAllTasks: () => void;
   resetSummary: () => void;
+  setForceSync: (force: boolean) => void;
   startSync: (
     session: SessionPayload,
     tags?: string | string[],
@@ -86,6 +87,7 @@ export const useBulkSyncStore = create<BulkSyncStore>((set, get) => ({
   state: "idle",
   tasks: syncTask,
   progressStatus: {},
+  forceSync: true,
   summary: {
     state: "idle",
     tasks: [],
@@ -124,6 +126,8 @@ export const useBulkSyncStore = create<BulkSyncStore>((set, get) => ({
       },
     })),
 
+  setForceSync: (force) => set({ forceSync: force }),
+
   resetAllTasks: () => {
     const progressReset: ProgressStatus = {};
     for (const task of get().tasks) {
@@ -132,7 +136,8 @@ export const useBulkSyncStore = create<BulkSyncStore>((set, get) => ({
         success: 0,
         failed: 0,
         errors: [],
-        state: "in progress",
+        state: "idle",
+        totalRecords: 0,
       };
     }
     set({ progressStatus: progressReset });
@@ -152,28 +157,36 @@ export const useBulkSyncStore = create<BulkSyncStore>((set, get) => ({
         overallPercentage: "0%",
         lastSyncedAt: "",
       },
-      progressStatus: {},
     }),
 
   startSync: async (session, tags, progressUpdate) => {
     const hasNetAccess = await hasOnlineAccess();
     const hasToken = isValidTokenString(session?.token);
+    const { forceSync } = get();
 
-    const isUserGoodToSync = (await dexieDb.person_profile
-      .where("email")
-      .equals(session!.userData!.email!)
-      .first())?.push_status_id == 1;
-    // alert(JSON.stringify({ hasToken, hasNetAccess }));
+    if (!hasNetAccess) {
+      toast({
+        title: "No Internet Connection",
+        description: "Please check your internet connection and try again.",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    if (!hasNetAccess) return;
-
-    if (!hasToken) return;
+    if (!hasToken) {
+      toast({
+        title: "Invalid Session",
+        description: "Please login again to continue.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     const { tasks, setProgressStatus } = get();
     const filteredTasks = tags
       ? tasks.filter((task) =>
-        Array.isArray(tags) ? tags.includes(task.tag) : task.tag === tags
-      )
+          Array.isArray(tags) ? tags.includes(task.tag) : task.tag === tags
+        )
       : tasks;
 
     set({
@@ -190,16 +203,32 @@ export const useBulkSyncStore = create<BulkSyncStore>((set, get) => ({
     let totalRecords = 0;
     const taskRecordMap: Record<string, any[]> = {};
 
+    // Initialize progress status for filtered tasks
     for (const task of filteredTasks) {
-      const records = task.force
-        ? await task.module.toArray()
-        : await task.module.where("push_status_id").notEqual(1).toArray();
-      // ? await cleanArray(task.module.toArray())
-      // : await cleanArray(task.module.where("push_status_id").notEqual(1).toArray());
-      taskRecordMap[task.tag] = task.cleanup
-        ? records.map(task.cleanup)
-        : records;
+      setProgressStatus(task.tag, {
+        state: "in progress",
+        success: 0,
+        failed: 0,
+        errors: [],
+        totalRecords: 0,
+        isSyncing: true,
+      });
+    }
+
+    // Load records for each task
+    for (const task of filteredTasks) {
+      const module = task.module();
+      const records = forceSync
+        ? await module.toArray()
+        : await module.where("push_status_id").notEqual(1).toArray();
+      
+      taskRecordMap[task.tag] = task.cleanup ? records.map(task.cleanup) : records;
       totalRecords += records.length;
+
+      // Update total records count in progress status
+      setProgressStatus(task.tag, {
+        totalRecords: records.length,
+      });
     }
 
     let processedCount = 0;
@@ -212,13 +241,6 @@ export const useBulkSyncStore = create<BulkSyncStore>((set, get) => ({
       let success = 0;
       let failed = 0;
       let errors: ProgressStatus[string]["errors"] = [];
-
-      setProgressStatus(task.tag, {
-        state: "in progress",
-        success: 0,
-        failed: 0,
-        errors: [],
-      });
 
       let encounteredError = false;
 
@@ -249,14 +271,14 @@ export const useBulkSyncStore = create<BulkSyncStore>((set, get) => ({
             }
 
             const res = await fetch(task.url, {
-              method: "POST",
+              method: task.method || "POST",
               body,
               headers,
             });
 
             if (res.ok) {
               const json = await res.clone().json();
-              await task.module.update(record.id, {
+              await task.module().update(record.id, {
                 push_status_id: 1,
                 push_date: new Date().toISOString(),
               });
@@ -308,6 +330,7 @@ export const useBulkSyncStore = create<BulkSyncStore>((set, get) => ({
 
       setProgressStatus(task.tag, {
         state: !hasNetAccess || !hasToken ? "error" : "completed",
+        isSyncing: false,
       });
 
       finalTasks.push({
@@ -357,14 +380,6 @@ export const useBulkSyncStore = create<BulkSyncStore>((set, get) => ({
         overallPercentage,
         lastSyncedAt: new Date().toISOString(),
       },
-    });
-
-    if (hasNetAccess && hasToken) {
-      toast({
-        title: "Sync finished",
-        description: `Overall: ${overallPercentage}`,
-        duration: 1500,
-      });
-    }
+    }); 
   },
 }));

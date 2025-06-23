@@ -21,38 +21,12 @@ const _session = await getSession() as SessionPayload;
 class MyDatabase extends Dexie {
     users!: Table<IUser, string>;
     useraccess!: Table<IUserAccess, string>;
-    roles!: Table<IRoles, string>;
-    modules!: Table<IModules, string>;
-    permissions!: Table<IPermissions, string>;
-    // lib_city!: Table<ICity, string>;
-    lib_modality!: Table<ILibModality, string>;
-    lib_modality_sub_category!: Table<ILibModalitySubCategory, string>;
-    lib_sex!: Table<ILibSex, string>;
-    lib_civil_status!: Table<ILibCivilStatus, string>;
-    lib_extension_name!: Table<ILibExtensionName, string>;
-    lib_sectors!: Table<ILibSectors, string>;
-    lib_id_card!: Table<ILibIdCard, string>;
-    lib_educational_attainment!: Table<ILibEducationalAttainment, string>;
-    lib_relationship_to_beneficiary!: Table<ILibRelationshipToBeneficiary, string>;
-    lib_type_of_disability!: Table<ILibTypeOfDisability, string>;
-    lib_cfw_type!: Table<ILibCFWType, string>;
-    lib_year_level!: Table<ILibYearLevel, string>;
-    lib_courses!: Table<ILibCourses, string>;
-    lib_deployment_area!: Table<ILibDeploymentArea, string>;
-    lib_deployment_area_categories!: Table<ILibDeploymentAreaCategories, string>;
-    lib_type_of_work!: Table<ILibTypeOfWork, string>;
-    lib_files_to_upload!: Table<ILibFilesToUpload, string>;
-    lib_school_profiles!: Table<ILibSchoolProfiles, string>;
-    lib_school_programs!: Table<ILibSchoolPrograms, string>;
-    lib_statuses!: Table<ILibStatuses, string>;
     person_profile!: Table<IPersonProfile, string>;
     person_profile_sector!: Table<IPersonProfileSector, string>;
     person_profile_disability!: Table<IPersonProfileDisability, string>;
     person_profile_family_composition!: Table<IPersonProfileFamilyComposition, string>;
     person_profile_cfw_fam_program_details!: Table<IPersonProfileCfwFamProgramDetails, string>;
     attachments!: Table<IAttachments, string>;
-    lib_ip_group!: Table<ILibIPGroup, string>;
-    lib_year_served!: Table<ILibYearServed, string>;
     cfwschedules!: Table<ICFWSchedules, string>;
     cfwtimelogs!: Table<ICFWTimeLogs, string>;
     cfwassessment!:Table<ICFWAssessment, string>;
@@ -74,32 +48,6 @@ class MyDatabase extends Dexie {
         this.version(1).stores({
             users: `id, username, email, password, role_id, level_id, ${commonFields}`,
             useraccess: `id, module_id, permission_id, ${commonFields}`,
-            roles: `id, role_description, ${commonFields}`,
-            modules: `id, module_description, module_path, ${commonFields}`,
-            permissions: `id, permission_description, ${commonFields}`,
-            lib_modality: `id, modality_name, is_active, ${commonFields}`,
-            lib_modality_sub_category: `id, modality_id,modality_sub_category_name, is_active, ${commonFields}`,
-            lib_sex: `id, sex_description, ${commonFields}`,
-            lib_civil_status: `id, civil_status_description, ${commonFields}`,
-            lib_extension_name: `id, extension_name, is_active, ${commonFields}`,
-            lib_sectors: `id, sector_name, ${commonFields}`,
-            lib_id_card: `id, id_card_name, ${commonFields}`,
-            lib_educational_attainment: `id, educational_attainment_description, ${commonFields}`,
-            lib_relationship_to_beneficiary: `id, relationship_name, ${commonFields}`,
-            lib_type_of_disability: `id, disability_name, ${commonFields}`,
-            lib_cfw_type: `id, cfw_type_name, ${commonFields}`,
-            lib_year_level: `id, year_level_name, ${commonFields}`,
-            lib_courses: `id, course_code,course_name,course_description, ${commonFields}`,
-            lib_deployment_area: `id, deployment_name, ${commonFields}`,
-            lib_deployment_area_categories: `id, category_name, ${commonFields}`,
-            lib_type_of_work: `id, work_name, ${commonFields}`,
-            lib_files_to_upload: `id, file_name, ${commonFields}`,
-            lib_ip_group: `id, name, ${commonFields}`,
-            lib_year_served: `id, year_served, ${commonFields}`,
-            lib_program_types: `id, program_type_name, ${commonFields}`,
-            lib_school_profiles: `id, school_name,short_name, school_code, address, city_code, province_code, region_code, barangay_code, email, contact_number, school_head, school_head_position, website_url, established_year, logo_url, type, level, ${commonFields}`,
-            lib_school_programs: `id, program_name, program_code, ${commonFields}`,
-            lib_statuses: `id, status_name, ${commonFields}`,
             cfwschedules: ` id , record_id, cfw_type_id, shift_type, date_start, date_end, time_in_1, time_out_1, time_in_2, time_out_2, time_in_3, time_out_3, time_in_4, time_out_4, total_hours_required, status_id, ${commonFields}`,
             cfwtimelogs: `id,  record_id,  log_type,  log_in, log_out,  work_session,  total_work_hours,  status,  ${commonFields}`,
             attachments: `id, record_id, file_id, file_name, file_path,file_type, module_path, ${commonFields}`,
@@ -123,7 +71,7 @@ class MyDatabase extends Dexie {
             work_plan: `id, immediate_supervisor_id,alternate_supervisor_id,objectives, area_focal_person_id,no_of_days_program_engagement,approved_work_schedule,status_id, ${commonFields}`,
             work_plan_tasks: `id, work_plan_id,activities_tasks,expected_output, work_plan_category_id, timeline_from, timeline_to, assigned_person_id,status_id, ${commonFields}`,
             work_plan_cfw: `id, work_plan_id,cfw_id,status_id, ${commonFields}`,
-            accomplishment_report: `id, person_id, period_cover_from, work_plan_id,accomplishment_actual_task, status_id, ${commonFields}`,
+            accomplishment_report: `id, person_profile_id, period_cover_from, work_plan_id,accomplishment_actual_task, status_id, ${commonFields}`,
             accomplishment_actual_task: `id, accomplishment_report_id,task,category_id, accomplishment, mov, status_id, ${commonFields}`,
             report_designer: `id, name, columns, ${commonFields}`,
             report_column: `id, report_designer_id, label, value, type, description, visible, options,${commonFields}`,

@@ -118,6 +118,8 @@ export default function Attachments({
     e: ChangeEvent<HTMLInputElement>,
     id: number
   ) => {
+
+    debugger
     const file = e.target.files?.[0]; // Get the first selected file
     // alert(id)
     if (!file) return; // Exit if no file is selected

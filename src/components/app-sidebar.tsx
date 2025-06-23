@@ -3,6 +3,7 @@
 import * as React from "react"
 import {
   Command,
+  Database,
   Earth,
   Frame,
   GalleryVerticalEnd,
@@ -100,7 +101,7 @@ const data = {
           title: "Masterlist",
           url: "/subproject/geotagging",
           permission: ["Can View", "Can Delete"],
-          roles:["*"]
+          roles: ["*"]
         }
       ],
       modules: ["Sub-Project"],
@@ -115,7 +116,7 @@ const data = {
           title: "Masterlist",
           url: "/subproject/tasks",
           permission: ["Can Add", "Can View", "Can Delete"],
-          roles:["*"]
+          roles: ["*"]
         }
       ],
       modules: ["Sub-Project"],
@@ -131,19 +132,19 @@ const data = {
           title: "Roles",
           url: "/settings/libraries/roles",
           permission: ["Can Add", "Can View", "Can Delete"],
-          roles:["*"]
+          roles: ["*"]
         },
         {
           title: "Permissions",
           url: "/settings/libraries/permissions",
           permission: ["Can Add", "Can View", "Can Delete"],
-          roles:["*"]
+          roles: ["*"]
         },
         {
           title: "Modules",
           url: "/settings/libraries/modules",
           permission: ["Can Add", "Can View", "Can Delete"],
-          roles:["*"]
+          roles: ["*"]
         }
       ],
       modules: ["Settings"],
@@ -159,7 +160,7 @@ const data = {
           title: "Masterlist",
           url: "/settings/users",
           permission: ["Can Add", "Can View", "Can Delete"],
-          roles:["*"]
+          roles: ["*"]
         }
       ],
       modules: ["Settings"],
@@ -176,35 +177,35 @@ const data = {
           title: "My Profile",
           url: "/personprofile/form",
           permission: ["Can Add", "Can View", "Can Delete"],
-          roles:["*"]
+          roles: ["*"]
         },
         {
           title: "Masterlist",
           url: "/personprofile/masterlist",
           permission: ["Can View", "Can Delete"],
-          roles:["CFW Beneficiary"]
+          roles: ["CFW Beneficiary", "CFW Immediate Supervisor", "CFW Administrator", "Administrator"]
         },
         {
           title: "Daily Time Record",
           url: "/personprofile/daily-time-record",
           permission: ["Can Add", "Can View", "Can Delete"],
-          roles:["CFW Beneficiary"]
+          roles: ["CFW Beneficiary", "CFW Immediate Supervisor"]
         },
         {
           title: "Accomplishment Report",
           url: "/personprofile/accomplishment-report",
           permission: ["Can Add", "Can View", "Can Delete"],
-          roles:["CFW Beneficiary"]
+          roles: ["CFW Beneficiary", "CFW Immediate Supervisor", "CFW Administrator", "Administrator"]
         },
         {
           title: "Payroll",
           url: "/personprofile/payroll",
           permission: ["Can Add", "Can View", "Can Delete"],
-          roles:["CFW Beneficiary"]
+          roles: ["CFW Beneficiary", 'CFW Administrator', "Administrator"]
         }
       ],
       modules: ["Person Profile"],
-      roles: ["*"]
+      roles: ["Guest", "CFW Beneficiary", "CFW Immediate Supervisor",'CFW Administrator', 'Administrator',]
     },
     {
       title: "CFW Management",
@@ -212,11 +213,23 @@ const data = {
       icon: User2Icon,
       isActive: false,
       items: [
+        // {
+        //   title: "Work Plan Dashboard",
+        //   url: "/personprofile/work-plan/dashboard",
+        //   permission: ["Can Add", "Can View", "Can Delete"],
+        //   roles: ["*"]
+        // },
         {
           title: "Work Plans",
-          url:"/personprofile/work-plan",
-          permission:["Can Add","Can View","Can Delete"],
-          roles:["*"]
+          url: "/personprofile/work-plan",
+          permission: ["Can Add", "Can View", "Can Delete"],
+          roles: ["*"]
+        },
+        {
+          title: "Beneficiaries",
+          url: "/personprofile/beneficiaries",
+          permission: ["Can Add", "Can View", "Can Delete"],
+          roles: ["*"]
         },
 
       ],
@@ -232,13 +245,13 @@ const data = {
           title: "Designer",
           url: "/report/designer",
           permission: ["Can Add", "Can View", "Can Delete"],
-          roles:["*"]
+          roles: ["*"]
         },
         {
           title: "CFW",
           url: "/report/cfw",
           permission: ["Can Add", "Can View", "Can Delete"],
-          roles:["*"]
+          roles: ["*"]
         },
 
       ],
@@ -246,28 +259,28 @@ const data = {
       modules: ["Person Profile"],
     },
     {
-      title:"Hiring and Deployment",
-      url:"#",
+      title: "Hiring and Deployment",
+      url: "#",
       icon: User2Icon,
       isActive: false,
-      items:[
+      items: [
         {
-          title:"Item Created",
-          url:"/hr-development/hiring-and-deployment/item-created",
-          permission:["Can Add", "Can View", "Can Delete"],
-          roles:["*"]
-        },
-         {
-          title:"Item Distribution",
-          url:"/hr-development/hiring-and-deployment/item-distribution",
-          permission:["Can Add", "Can View", "Can Delete"],
-          roles:["*"]
+          title: "Item Created",
+          url: "/hr-development/hiring-and-deployment/item-created",
+          permission: ["Can Add", "Can View", "Can Delete"],
+          roles: ["*"]
         },
         {
-          title:"Applicants",
-          url:"/hr-development/hiring-and-deployment/applicants",
-          permission:["Can View", "Can Delete"],
-          roles:["*"]
+          title: "Item Distribution",
+          url: "/hr-development/hiring-and-deployment/item-distribution",
+          permission: ["Can Add", "Can View", "Can Delete"],
+          roles: ["*"]
+        },
+        {
+          title: "Applicants",
+          url: "/hr-development/hiring-and-deployment/applicants",
+          permission: ["Can View", "Can Delete"],
+          roles: ["*"]
         }
       ],
       modules: ["Human Resource and Development"],
@@ -275,27 +288,27 @@ const data = {
     },
     {
       title: "Budget",
-      url:"#",
+      url: "#",
       icon: HandCoinsIcon,
       isActive: false,
       items: [
-         {
+        {
           title: "Allocation",
           url: "/finance/budget/allocation",
           permission: ["Can View", "Can Delete"],
-          roles:["*"]
+          roles: ["*"]
         },
         {
           title: "Monthly Obligation Plan",
           url: "/finance/budget/mop",
           permission: ["Can View", "Can Delete"],
-          roles:["*"]
+          roles: ["*"]
         },
         {
           title: "Allotment",
           url: "/finance/budget/allotment",
           permission: ["Can View", "Can Delete"],
-          roles:["*"]
+          roles: ["*"]
         },
       ],
       modules: ["Finance"],
@@ -315,19 +328,26 @@ const data = {
       url: "/punch",
       icon: Frame,
       pathname: ["personprofile"],
-      roles:["CFW Administrator","Administrator"]
+      roles: ["CFW Administrator", "Administrator"]
     },
     {
-      name:"Configuration",
+      name: "Data Management",
+      url: "/db-manager",
+      icon: Database,
+      pathname: ["*"],
+      roles: ["*"]
+    },
+    {
+      name: "Configuration",
       url: "/hr-development/configuration/",
-      icon:SettingsIcon,
+      icon: SettingsIcon,
       pathname: ["hr-development"],
       roles: ["Administrator"],
     },
     {
-      name:"Configuration",
+      name: "Configuration",
       url: "/finance/configuration/",
-      icon:SettingsIcon,
+      icon: SettingsIcon,
       pathname: ["finance"],
       roles: ["Administrator"],
     }
@@ -350,7 +370,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       //const session = (await response.json()) as SessionPayload;
       console.log("SideBar Session: ", _session);
       if (_session != null) {
-        debugger;
+        // debugger;
         user.email = _session.userData.email!;
         user.name = _session.userData.name!;
         user.role = _session.userData.role!;
@@ -381,7 +401,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           nav.modules.includes(activeTeam?.name) // Filter based on active team
       );
 
-      debugger;
       const filteredSubModule = data.navMain.filter(item =>
         item.modules.includes(activeTeam?.name) &&
         (
@@ -400,11 +419,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             )
           );
 
-          // Step 2: Filter items by role hierarchy
+          // Step 2: Filter items by role hierarchy - This is the key change
           const roleFilteredItems = permissionFilteredItems?.filter(item =>
             !item.roles || // Allow if no roles defined
             item.roles.includes("*") ||
-            hasSufficientRole(userTeam?.role ?? "", item.roles)
+            (item.roles.some(role => role === userTeam?.role)) // Exact role match instead of hierarchy
           );
 
           return {
@@ -413,8 +432,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           };
         })
         .filter(module => module.items && module.items.length > 0);
-
-
 
       setFilteredNavMain(navMain);
       setFilteredSub(filteredChildModule)
@@ -426,13 +443,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const matchedProjects = data.projects.filter(project => {
     const matchesPath = project.pathname.includes("*") ||
       project.pathname.some(path => pathname?.toLowerCase().includes(path.toLowerCase()));
-  
+
     const matchesRole = project.roles.includes("*") ||
       project.roles.some(role => user.role.includes(role));
-  
+
     return matchesPath && matchesRole;
   });
-  
+
 
   return (
     <>

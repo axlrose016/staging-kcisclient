@@ -20,8 +20,9 @@ import { useRouter } from "next/navigation";
 import { getOfflineLibRoles } from "@/components/_dal/offline-libraries";
 import { PushStatusBadge } from "@/components/general/push-status-badge";
 import { dexieDb } from "@/db/offline/Dexie/databases/dexieDb";
-import { SettingsService } from "../../SettingsService";
+import { SettingsService } from "../../../../../components/services/SettingsService";
 import { toast } from "@/hooks/use-toast";
+import { libDb } from "@/db/offline/Dexie/databases/libraryDb";
 
 export default function Roles() {
   const [roles, setRoles] = React.useState([]);
@@ -64,7 +65,7 @@ export default function Roles() {
   };
 
   const handleDelete = async (row: any) => {
-    const success = await settingsService.deleteData(dexieDb, "roles", row);
+    const success = await settingsService.deleteData(libDb, "roles", row);
     if (success) {
       toast({
         variant: "green",

@@ -12,6 +12,9 @@ import { getSession } from '@/lib/sessions-client';
 import { formatInTimeZone } from 'date-fns-tz';
 import { ILibSchoolProfiles } from '@/components/interfaces/library-interface';
 import Image from 'next/image';
+import { ARService } from '../service';
+import { libDb } from '@/db/offline/Dexie/databases/libraryDb';
+import { toast } from '@/hooks/use-toast';
 
 interface IData {
     id: string;
@@ -69,8 +72,10 @@ const baseUrl = 'personprofile/accomplishment-report'
 export default function AccomplishmentReportUsersList() {
 
     const router = useRouter();
+    const service = new ARService()
+
     const [user, setUser] = useState<IUser | any>();
-    const [, setSession] = useState<SessionPayload>();
+    const [session, setSession] = useState<SessionPayload>();
     const params = useParams<{ 'accomplishment-userid': string; id: string }>()
     const [data, setARList] = useState<IAccomplishmentReport[]>([])
 
@@ -88,18 +93,79 @@ export default function AccomplishmentReportUsersList() {
     }, [])
 
 
+
+    useEffect(() => {
+        console.log('')
+        const fetchWorkPlan = async () => {
+            if (!user?.id || !session?.token) {
+                console.log('Worlplan: Missing required user or session data');
+                return null;
+            }
+
+            try { 
+                const results = await service.syncDLWorkplan(`work_plan/view/by_bene/${user.id}/`);
+                if (!results) {
+                    console.log('Failed to fetch time records');
+                    return;
+                }
+                console.log('Worlplan:   data:', results);
+                return data;
+            } catch (error) {
+                console.error('Worlplan: Error fetching work plan:', error);
+                return null;
+            }
+        };
+
+        fetchWorkPlan();
+    }, [user])
+
+    useEffect(() => {
+        (async () => { 
+            handleOnRefresh()
+        })();
+    }, [session])
+
+
+    const handleOnRefresh = async () => {
+        try {
+
+            if (!session) {
+                console.log('handleOnRefresh > session is not available');
+                return;
+            }
+
+            const results = await service.syncDLARs(`accomplishment_report/view/${params!['accomplishment-userid']}/`);
+            if (!results) {
+                console.log('Failed to fetch time records');
+                return;
+            }
+
+            await getResults(session);
+        } catch (error) {
+            console.error('Error syncing time records:', error);
+            toast({
+                variant: "warning",
+                title: "Unable to Fetch Latest Data",
+                description: error instanceof Error
+                    ? `Error: ${error.message}`
+                    : "Unable to sync DTR records. Please try logging out and back in to refresh your session.",
+            });
+        }
+    };
+
+
     const getResults = async (session: SessionPayload) => {
         const user = await dexieDb.person_profile.where('user_id')
             .equals(params!['accomplishment-userid']!).first();
 
         const merge = {
-            ...await dexieDb.lib_school_profiles.where("id").equals(user!.school_id!).first(),
+            ...await libDb.lib_school_profiles.where("id").equals(user!.school_id!).first(),
             ...user
         };
 
         console.log('getResults', { session, merge });
         setUser(merge);
-        setARList(await dexieDb.accomplishment_report.where("person_id").equals(params!['accomplishment-userid']!).toArray())
+        setARList(await dexieDb.accomplishment_report.where("person_profile_id").equals(params!['accomplishment-userid']!).toArray())
 
         const results = await dexieDb.cfwtimelogs.where('created_by')
             .equals(user?.email ?? "")
@@ -158,10 +224,9 @@ export default function AccomplishmentReportUsersList() {
 
                     <AppTable
                         data={data}
-                        columns={columns}
-                        onDelete={handleDelete}
+                        columns={columns} 
                         onRowClick={handleRowClick}
-                        onClickAddNew={handleClickAddNew}
+                        onClickAddNew={session?.userData?.role && ["CFW Beneficiary", "Guest"].includes(session.userData.role) ? handleClickAddNew : undefined}
                     />
                 </div>
 

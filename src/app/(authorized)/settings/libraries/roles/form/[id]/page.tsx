@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils"
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { toast } from "@/hooks/use-toast"
-import { LibrariesService } from "../../../../../library/LibrariesService"
+import { LibrariesService } from "../../../../../../../components/services/LibrariesService"
 import { IRoles } from "@/components/interfaces/library-interface"
 
 const formSchema = z.object({

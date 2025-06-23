@@ -29,19 +29,20 @@ import {
 } from "lucide-react";
 
 import React, { useState, useEffect, useRef } from "react";
-import LoginService from "../login/LoginService";
-import { ICFWTimeLogs } from "@/components/interfaces/iuser";
+import LoginService from "../../components/services/LoginService";
+import { ICFWTimeLogs, IUserData } from "@/components/interfaces/iuser";
 import { endOfDay, startOfDay } from "date-fns";
 import { toZonedTime } from "date-fns-tz";
 import { Loader2 } from "lucide-react";
 import Image from "next/image";
-import { hasOnlineAccess } from "@/lib/utils";
+import { hashPassword, hasOnlineAccess } from "@/lib/utils";
 import { useBulkSyncStore } from "@/lib/state/bulksync-store";
 import { syncTask } from "@/lib/bulksync";
 import FloatingPWAStatusAvatar from "@/components/general/floating-sw-status";
 import { AnimatedBackground } from "@/components/ui/animated-background";
 import { getSession } from "@/lib/sessions-client";
 import { SessionPayload } from "@/types/globals";
+import { getUserByEmail, getUserData } from "@/db/offline/Dexie/schema/user-service";
 
 
 interface User {
@@ -71,7 +72,7 @@ export default function ClockInOut() {
     const [activeLog, setActiveLog] = useState<ICFWTimeLogs | null>(null);
     const [isOpen, setIsOpen] = useState(false);
     const [username, setUsername] = useState("");
-    const [password, setPassword] = useState(""); 
+    const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [isTimeBtnDisabled, setIsTimeBtnDisabled] = useState(false);
     const [isConfirmBtnDisabled, setIsConfirmBtnDisabled] = useState(true);
@@ -119,7 +120,7 @@ export default function ClockInOut() {
         setTasks(syncTask.filter(i => i.tag == 'Person Profile > CFW attendance log'))
     }, [setTasks, resetAllTasks])
 
-     
+
 
     useEffect(() => {
         // Initial update with local time
@@ -142,7 +143,7 @@ export default function ClockInOut() {
         const handleOnline = async () => {
             setIsOnline(true);
             wasOfflineRef.current = true;
-            const session = await getSession() as SessionPayload; 
+            const session = await getSession() as SessionPayload;
             await startSync(session!, "Person Profile > CFW attendance log")
             await updateTime(true);
         };
@@ -219,6 +220,7 @@ export default function ClockInOut() {
     }
 
     const getTodayLatestLog = async (data: User | any) => {
+        console.log('getTodayLatestLog > data', data)
         const now = new Date();
         const timeZone = 'Asia/Manila';
 
@@ -233,7 +235,7 @@ export default function ClockInOut() {
         const results = await dexieDb.cfwtimelogs
             .where('created_date')
             .between(startUtc, endUtc, true, true)
-            .and(e => e.created_by === data.user.userData.email)
+            .and(e => e.created_by === data.userData.email)
             .sortBy('created_date');
 
         console.log('results  > results', results)
@@ -248,21 +250,23 @@ export default function ClockInOut() {
         }
 
         setIsLoading(true);
+        const email = username.toLowerCase()
         try {
-            const user = await LoginService.onlineLogin(username, password);
-            if (user) {
-                const userlog = await getTodayLatestLog(user);
-                setActiveLog(userlog);
-                setUser(user.user);
-                setIsOpen(true);
-                setIsTimeBtnDisabled(true);
-                setIsConfirmBtnDisabled(false);
+            if (isOnline) {
+                const user = await LoginService.onlineLogin(email, password);
+                console.log('handleTimeClick > user', { user, email })
+                if (user) {
+                    const userlog = await getTodayLatestLog(user.user);
+                    setActiveLog(userlog);
+                    setUser(user.user);
+                    setIsOpen(true);
+                    setIsTimeBtnDisabled(true);
+                    setIsConfirmBtnDisabled(false);
+                } else {
+                    oflineProcess()
+                }
             } else {
-                toast({
-                    variant: "destructive",
-                    title: "Login Failed",
-                    description: "Please check your credentials",
-                });
+                oflineProcess()
             }
         } catch (err) {
             console.error('Login error:', err);
@@ -275,6 +279,58 @@ export default function ClockInOut() {
             setIsLoading(false);
         }
     };
+
+
+    const oflineProcess = async () => {
+        const email = username.toLowerCase()
+        const userdevice = await getUserByEmail(email);
+        console.log('Login error:', { username, userdevice });
+        if (!userdevice) {
+            setIsLoading(false)
+            return toast({
+                variant: "destructive",
+                title: "Incorrect Email and/or Password!",
+                description: "The email and/or password you entered is incorrect. Please try again!",
+            });
+        }
+
+        const decryptedPassword = await hashPassword(password, userdevice.salt);
+        if (
+            userdevice.password !== decryptedPassword ||
+            (userdevice.email !== email && userdevice.username !== email)
+        ) {
+            return toast({
+                variant: "destructive",
+                title: "Invalid Credentials!",
+                description: "The email or password is incorrect. Please try again!",
+            });
+        }
+
+        const userData: IUserData | null = await getUserData(userdevice.id);
+
+        if (!userData) {
+            return toast({
+                variant: "destructive",
+                title: "Login Failed",
+                description: "Please check your credentials",
+            });
+        } else {
+            const useroffline = {
+                id: userdevice.id,
+                userData: {
+                    email: userdevice.email,
+                    name: userdevice.username,
+                }
+            } as User
+
+            const userlog = await getTodayLatestLog({ user: useroffline });
+            setActiveLog(userlog);
+            setUser(useroffline);
+            setIsOpen(true);
+            setIsTimeBtnDisabled(true);
+            setIsConfirmBtnDisabled(false);
+        }
+    }
 
     const createLogs = async (type: string) => {
         if (!user) return;
@@ -303,7 +359,7 @@ export default function ClockInOut() {
             } : {
                 ...activeLog!,
                 log_type: type,
-                log_out: new Date().toISOString()
+                log_out: currentTime.toISOString()
             };
 
             await dexieDb.cfwtimelogs.put(logs);
@@ -455,7 +511,7 @@ export default function ClockInOut() {
                                     id="username"
                                     value={username}
                                     onChange={(e) => setUsername(e.target.value)}
-                                    className="mt-1 pl-10 bg-gray-50 border-gray-200 focus:border-cfw_bg_color focus:ring-cfw_bg_color"
+                                    className="mt-1 pl-10 bg-gray-50 border-gray-200 focus:border-cfw_bg_color focus:ring-cfw_bg_color lowercase"
                                     placeholder="Enter your Email"
                                     disabled={isLoading}
                                 />
@@ -472,7 +528,7 @@ export default function ClockInOut() {
                                         id="password"
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
-                                        className="mt-1 pl-10 pr-10 bg-gray-50 border-gray-200 focus:border-cfw_bg_color focus:ring-cfw_bg_color"
+                                        className="mt-1 pl-10 pr-10 bg-gray-50 border-gray-200 focus:border-cfw_bg_color focus:ring-cfw_bg_color normal-case"
                                         placeholder="Enter your Password"
                                         disabled={isLoading}
                                     />

@@ -61,6 +61,23 @@ export interface IPermissions {
 export interface ILibModality {
   id: number,
   modality_name: string,
+  finance_code: string | null,
+  is_active: boolean,
+  created_date: string,
+  created_by: string,
+  last_modified_date: string | null,
+  last_modified_by: string | null,
+  push_status_id: number,
+  push_date: string,
+  deleted_date: string | null,
+  deleted_by: string | null,
+  is_deleted: boolean,
+  remarks: string | null,
+}
+
+export interface ILibFundSource {
+  id: number,
+  fund_source_name: string,
   is_active: boolean,
   created_date: string,
   created_by: string,
@@ -634,4 +651,54 @@ export interface ILibAllotmentClass{
   deleted_by: string | null,
   is_deleted: boolean,
   remarks?: string | null,
+}
+
+export interface ILibRegion{
+  reg_id: number,
+  code_correspondence: string | null,
+  name: string | null,
+  altName: string | null,
+  code: string | null,
+  geo_level: string | null
+}
+
+export interface ILibProvince {
+  prov_id: number,
+  code_correspondence: string | null,
+  name: string | null,
+  code: string | null,
+  geo_level: string | null,
+  old_name: string | null,
+  income_classification: string | null,
+  region: string | null,
+  region_correspondence: string | null,
+  reg_id: number
+}
+
+export interface ILibCity {
+  city_id: number,
+  code_correspondence: string | null,
+  name: string | null,
+  code: string | null,
+  classification: string | null,
+  old_name: string | null,
+  city_class: string | null,
+  income_classification: string | null,
+  province: string | null,
+  province_correspondence: string | null,
+  prov_id: number
+}
+
+export interface ILibBrgy {
+  brgy_id: number,
+  code_correspondence: string | null,
+  name: string | null,
+  code: string | null,
+  geo_level: string | null,
+  old_name: string | null,
+  city_class: string | null,
+  urb_rur: string | null,
+  city: string | null,
+  city_correspondence: string | null,
+  city_id: number
 }

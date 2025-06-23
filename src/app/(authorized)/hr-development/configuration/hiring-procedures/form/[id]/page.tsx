@@ -11,7 +11,7 @@ import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { toast } from "@/hooks/use-toast"
 import { ILibHiringProcedure } from "@/components/interfaces/library-interface"
-import { LibrariesService } from "@/app/(authorized)/library/LibrariesService"
+import { LibrariesService } from "@/components/services/LibrariesService"
 
 const formSchema = z.object({
   id: z.number().optional(),

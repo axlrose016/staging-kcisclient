@@ -17,7 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import Details from "./health_concern";
 import { FormTabs } from "@/components/forms/form-tabs";
 import { FormDropDown } from "@/components/forms/form-dropdown";
-import { LibraryOption } from "@/components/interfaces/library-interface";
+import { IRoles, LibraryOption } from "@/components/interfaces/library-interface";
 import ContactDetails from "./contact_details";
 import CFWProgramDetails from "./program_details";
 import FamilyComposition from "./family_composition";
@@ -34,12 +34,13 @@ import {
   getOfflineLibModalitySubCategoryOptions,
   getOfflineLibSectorsLibraryOptions,
   getOfflineLibSexOptions,
+  getOfflineRoles,
 } from "@/components/_dal/offline-options";
 import Attachments from "./attachments";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2 } from "lucide-react";
-import SectorDetails from "./sectors";
+import SectorDetails from "./sectors_new";
 import {
   ICFWAssessment,
   IPersonProfile,
@@ -53,7 +54,7 @@ import { IAttachments } from "@/components/interfaces/general/attachments";
 import { ConfirmSave } from "@/types/globals";
 import { getSession } from "@/lib/sessions-client";
 import { dexieDb } from "@/db/offline/Dexie/databases/dexieDb";
-import PersonProfileService from "../PersonProfileService";
+import PersonProfileService from "../../../../components/services/PersonProfileService";
 // import GeneratePDF from './pdf'
 import {
   Dialog,
@@ -65,12 +66,18 @@ import {
 } from "@/components/ui/dialog";
 import Assessment from "../masterlist/[record]/assessment";
 import { SessionPayload } from "@/types/globals";
-import LoginService from "@/app/login/LoginService";
+import LoginService from "@/components/services/LoginService";
 import { Toaster } from "@/components/ui/toaster";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
+import RoleSelectionComponent from "@/components/forms/role-selection";
+import { IUser } from "@/components/interfaces/iuser";
+import { seedModules } from "@/db/offline/Dexie/schema/library-service";
+import SectorDetailsOld from "./sectors";
 // import pdfFonts from "pdfmake/build/vfs_fonts";
 const _session = (await getSession()) as SessionPayload;
 export default function PersonProfileForm({ user_id_viewing }: any) {
+  const params = useParams();
+  const idParam = params && 'record' in params ? params.id : undefined;
   const router = useRouter();
   const [userIdViewing, setUserIdViewing] = useState(user_id_viewing);
   const [hasProfilePicture, setHasProfilePicture] = useState(false);
@@ -111,6 +118,14 @@ export default function PersonProfileForm({ user_id_viewing }: any) {
     return name.trim().replace(/\s+/g, " ").toLowerCase();
   };
 
+  const [isNewRegister, setIsNewRegister] = useState(false)
+  const [selectedRoleNew, setSelectedRoleNew] = useState<IRoles | null>(null);
+  const handleSelectRoleNew = (role: IRoles) => {
+    setSelectedRoleNew(role);
+    localStorage.setItem("selected_role", JSON.stringify(role));
+  };
+
+  // const [newRegisterRoleName, setNewRegisterRoleName] = useState(false)
   // readonly when admin viewing
   useEffect(() => {
     if (userIdViewing) {
@@ -282,6 +297,7 @@ export default function PersonProfileForm({ user_id_viewing }: any) {
   >(4);
 
   const [modalityOptions, setModalityOptions] = useState<LibraryOption[]>([]);
+  const [rolesOptions, setRolesOptions] = useState<LibraryOption[]>([]);
   const [selectedModality, setSelectedModality] = useState(0);
   // const [selectedModalityID, setSelectedModalityId] = useState<number | null>(null);
 
@@ -452,7 +468,8 @@ export default function PersonProfileForm({ user_id_viewing }: any) {
 
         tabButton.click();
       } else {
-        alert(`Tab button with data-value="${tabValue}" not found.`);
+        console.log(`Tab button with data-value="${tabValue}" not found.`);
+        // alert(`Tab button with data-value="${tabValue}" not found.`);
       }
     } else {
       // alert(tabValue + ' ' + activeTab)
@@ -507,12 +524,12 @@ export default function PersonProfileForm({ user_id_viewing }: any) {
               console.warn("Dropdown button not found inside FormDropDown.");
             }
           } else {
-            alert("button not found");
-            console.warn("FormDropDown component not found.");
+            // alert("button not found");
+            console.warn("Button not found FormDropDown component not found.");
           }
         } else {
-          alert("button not found nor label");
-          console.warn("Label with for='sex_id' not found.");
+          // alert("button not found nor label");
+          console.warn("button not found nor label Label with for='sex_id' not found.");
         }
       }
     }, 100);
@@ -520,7 +537,7 @@ export default function PersonProfileForm({ user_id_viewing }: any) {
 
   const tabs = [
     ...(formData &&
-    (formData?.modality_id === 25 || formData?.modality_id === 22)
+      (formData?.modality_id === 25 || formData?.modality_id === 22)
       ? []
       : []),
 
@@ -542,131 +559,133 @@ export default function PersonProfileForm({ user_id_viewing }: any) {
       ),
     },
     // health concern
-    {
-      value: "details",
-      label: "Health Concern",
-      // label: "Basic Information",
-      content: activeTab === "details" && (
-        <div className="bg-card rounded-lg">
-          <Details
-            errors={errors}
-            capturedData={formData}
-            updateCapturedData={formData}
-            selectedModalityId={formData?.modality_id}
-            updateFormData={updateFormData}
-            user_id_viewing={userIdViewing}
-          />
-        </div>
-      ),
-    },
+    ...(selectedRoleNew?.id == "37544f59-f3ba-45df-ae0b-c8fa4e4ce446" ? [
+      {
+        value: "details",
+        label: "Health Concern",
+        // label: "Basic Information",
+        content: activeTab === "details" && (
+          <div className="bg-card rounded-lg">
+            <Details
+              errors={errors}
+              capturedData={formData}
+              updateCapturedData={formData}
+              selectedModalityId={formData?.modality_id}
+              updateFormData={updateFormData}
+              user_id_viewing={userIdViewing}
+            />
+          </div>
+        ),
+      },
 
-    // employment
-    {
-      value: "occupation",
-      label: "Employment",
-      content: activeTab === "occupation" && (
-        <div className="bg-card rounded-lg">
-          <Occupation
-            errors={errors}
-            capturedData={formData}
-            updateCapturedData={formData}
-            selectedModalityId={formData?.modality_id}
-            updateFormData={updateFormData}
-            user_id_viewing={userIdViewing}
-          />
-        </div>
-      ),
-    },
+      // employment
+      {
+        value: "occupation",
+        label: "Employment",
+        content: activeTab === "occupation" && (
+          <div className="bg-card rounded-lg">
+            <Occupation
+              errors={errors}
+              capturedData={formData}
+              updateCapturedData={formData}
+              selectedModalityId={formData?.modality_id}
+              updateFormData={updateFormData}
+              user_id_viewing={userIdViewing}
+            />
+          </div>
+        ),
+      },
 
-    {
-      value: "sector",
-      label: "Sector",
-      content: (
-        <div className="bg-card rounded-lg">
-          <SectorDetails
-            capturedData={formData}
-            sectorData={formSectorData}
-            disabilitiesData={formDisabilitiesData}
-            selectedModality={formData?.modality_id}
-            errors={errors}
-            updateFormData={updateFormData}
-            updateSectorData={updateFormSectorData}
-            updateDisabilityData={updateDisabilitiesData}
-            session={session}
-            user_id_viewing={userIdViewing}
-          />
-        </div>
-      ),
-    },
-    {
-      value: "family_composition",
-      label: "Family Composition",
-      content: (
-        <div className="p-3 bg-card rounded-lg">
-          <FamilyComposition
-            errors={errors}
-            capturedeData={formData}
-            familyCompositionData={formFamilyCompositionData}
-            updatedFamComposition={updateFormFamilyCompositionData}
-            session={session}
-            user_id_viewing={userIdViewing}
-          />
-        </div>
-      ),
-    },
-    {
-      value: "cash_for_work",
-      label: "Cash-for-Work Program Details",
-      content: (
-        <div className="p-3 bg-card rounded-lg">
-          <CFWProgramDetails
-            capturedData={formData}
-            familyComposition={formFamilyCompositionData}
-            errors={errors}
-            cfwFamComposition={formCFWFamDetailsData}
-            updateFormData={updateFormData}
-            updateCFWFormData={updateCFWFormData}
-            session={session}
-            user_id_viewing={userIdViewing}
-          />
-        </div>
-      ),
-    },
+      {
+        value: "sector",
+        label: "Sector",
+        content: (
+          <div className="bg-card rounded-lg">
+            <SectorDetailsOld
+              capturedData={formData}
+              sectorData={formSectorData}
+              disabilitiesData={formDisabilitiesData}
+              selectedModality={formData?.modality_id}
+              errors={errors}
+              updateFormData={updateFormData}
+              updateSectorData={updateFormSectorData}
+              updateDisabilityData={updateDisabilitiesData}
+              session={session}
+              user_id_viewing={userIdViewing}
+            />
+          </div>
+        ),
+      },
+      {
+        value: "family_composition",
+        label: "Family Composition",
+        content: (
+          <div className="p-3 bg-card rounded-lg">
+            <FamilyComposition
+              errors={errors}
+              capturedeData={formData}
+              familyCompositionData={formFamilyCompositionData}
+              updatedFamComposition={updateFormFamilyCompositionData}
+              session={session}
+              user_id_viewing={userIdViewing}
+            />
+          </div>
+        ),
+      },
+      {
+        value: "cash_for_work",
+        label: "Cash-for-Work Program Details",
+        content: (
+          <div className="p-3 bg-card rounded-lg">
+            <CFWProgramDetails
+              capturedData={formData}
+              familyComposition={formFamilyCompositionData}
+              errors={errors}
+              cfwFamComposition={formCFWFamDetailsData}
+              updateFormData={updateFormData}
+              updateCFWFormData={updateCFWFormData}
+              session={session}
+              user_id_viewing={userIdViewing}
+            />
+          </div>
+        ),
+      },
 
-    {
-      value: "education",
-      label: "Highest Educational Attainment",
-      content: (
-        <div className="p-3 bg-card rounded-lg">
-          <HighestEducationalAttainment
-            errors={errors}
-            capturedData={formData}
-            updateFormData={updateFormData}
-            user_id_viewing={userIdViewing}
+      {
+        value: "education",
+        label: "Highest Educational Attainment",
+        content: (
+          <div className="p-3 bg-card rounded-lg">
+            <HighestEducationalAttainment
+              errors={errors}
+              capturedData={formData}
+              updateFormData={updateFormData}
+              user_id_viewing={userIdViewing}
             // updateCapturedData={updateCapturedData}
             // selectedModalityID={selectedModalityID}
-          />
-        </div>
-      ),
-    },
-    // ...(cfwGeneralInfo.modality_sub_category_id === 2 ?
-    //   [{
-    //     value: "pwdrepresentative",
-    //     label: "CFW PWD Representative",
-    //     content: (
-    //       <div className="bg-card rounded-lg">
-    //         <PWDRepresentative
-    //           errors={errors}
-    //           capturedData={formData}
-    //         // updateCapturedData={updateCapturedData}
-    //         // selectedModalityID={selectedModalityID}
-    //         />
-    //       </div>
-    //     ),
-    //   }
-    //   ] : []
-    // )
-    // ,
+            />
+          </div>
+        ),
+      },
+      // ...(cfwGeneralInfo.modality_sub_category_id === 2 ?
+      //   [{
+      //     value: "pwdrepresentative",
+      //     label: "CFW PWD Representative",
+      //     content: (
+      //       <div className="bg-card rounded-lg">
+      //         <PWDRepresentative
+      //           errors={errors}
+      //           capturedData={formData}
+      //         // updateCapturedData={updateCapturedData}
+      //         // selectedModalityID={selectedModalityID}
+      //         />
+      //       </div>
+      //     ),
+      //   }
+      //   ] : []
+      // )
+      // ,
+    ] : []),
     {
       value: "deployment",
       label: "Deployment Area",
@@ -677,42 +696,45 @@ export default function PersonProfileForm({ user_id_viewing }: any) {
             capturedData={formData}
             updateFormData={updateFormData}
             user_id_viewing={userIdViewing}
-            // updateCapturedData={updateCapturedData}
-            // selectedModalityID={selectedModalityID}
+            selectedRoleDataNew={selectedRoleNew}
+          // updateCapturedData={updateCapturedData}
+          // selectedModalityID={selectedModalityID}
           />
         </div>
       ),
     },
 
-    {
-      value: "attachment",
-      label: "Attachment",
-      content: (
-        <div className="p-3 bg-card rounded-lg">
-          <Attachments
-            errors={errors}
-            capturedData={formAttachmentsData}
-            updateFormData={updateFormAttachments}
-            session={session}
-            user_id_viewing={userIdViewing}
-            profileData={formData}
-          />
-        </div>
-      ),
-    },
+    ...(selectedRoleNew?.id == "37544f59-f3ba-45df-ae0b-c8fa4e4ce446" ? [
+      {
+        value: "attachment",
+        label: "Attachment",
+        content: (
+          <div className="p-3 bg-card rounded-lg">
+            <Attachments
+              errors={errors}
+              capturedData={formAttachmentsData}
+              updateFormData={updateFormAttachments}
+              session={session}
+              user_id_viewing={userIdViewing}
+              profileData={formData}
+            />
+          </div>
+        ),
+      }] : []),
+
 
     ...(user_id_viewing
       ? [
-          {
-            value: "assessment",
-            label: "Assessment and Eligibility",
-            content: (
-              <div className="p-3 bg-card rounded-lg">
-                <Assessment />
-              </div>
-            ),
-          },
-        ]
+        {
+          value: "assessment",
+          label: "Assessment and Eligibility",
+          content: (
+            <div className="p-3 bg-card rounded-lg">
+              <Assessment />
+            </div>
+          ),
+        },
+      ]
       : []),
 
     // ...(user_id_viewing ? [
@@ -803,7 +825,7 @@ export default function PersonProfileForm({ user_id_viewing }: any) {
           "body",
           `
             <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">          
-              <p>Dear ${first_name.toUpperCase()},</p>
+              <p>Dear ${first_name},</p>
               <p>${email_body}</p>        
               <p>Best regards,</p>
               <p>KALAHI-CIDSS-CFWP </p>
@@ -855,6 +877,7 @@ export default function PersonProfileForm({ user_id_viewing }: any) {
     // const data = await res.json();
   };
 
+  // save data
   useEffect(() => {
     const saveData = async () => {
       if (confirmed) {
@@ -1833,6 +1856,13 @@ export default function PersonProfileForm({ user_id_viewing }: any) {
               );
               return;
             }
+          } else {
+            errorToast(
+              "Family composition must include at least one record for the current user.",
+              "family_composition",
+              ""
+            );
+            return;
           }
           // if (parsedFCom.length == 0) {
           //   errorToast("Family composition is required!", "family_composition", ""); return;
@@ -2161,7 +2191,7 @@ export default function PersonProfileForm({ user_id_viewing }: any) {
           immediate_supervisor_id: null,
           alternate_supervisor_id: null,
           cfw_category_id: formData.is_graduate ?? false,
-          created_by: _session?.userData.email ?? "",
+          created_by: _session?.userData.email ?? null,
           created_date: new Date().toISOString(),
           last_modified_by: null,
           last_modified_date: null,
@@ -2207,9 +2237,13 @@ export default function PersonProfileForm({ user_id_viewing }: any) {
             );
             // debugger
             try {
+
+
+
+
               const res = await fetch(
                 process.env.NEXT_PUBLIC_API_BASE_URL_KCIS +
-                  "cfw_assessment/status/patch/",
+                "cfw_assessment/status/patch/",
                 {
                   method: "POST",
                   headers: {
@@ -2219,6 +2253,7 @@ export default function PersonProfileForm({ user_id_viewing }: any) {
                   body: JSON.stringify({
                     status_id: parsedlsAssessment.status_id,
                     person_profile_id: userIdViewing,
+                    assessment: formAssessment.assessment,
                     deployment_area_id:
                       parsedLsAssignedDeploymentArea.assigned_deployment_area_id,
                     deployment_area_category_id:
@@ -2232,29 +2267,41 @@ export default function PersonProfileForm({ user_id_viewing }: any) {
                 const data = await res.json();
                 console.log("CFW Assessment has been patched ", data);
 
+                debugger
+
+                // alert(idParam)
                 // change the role to CFW Beneficiary
+                const record = await dexieDb.person_profile.get(userIdViewing);
+                const userId = record?.user_id
+                const email = record?.email
                 const lsPP = localStorage.getItem("person_profile");
-                // debugger
                 if (lsPP) {
                   const parsedPP = JSON.parse(lsPP);
-
+                  console.log("Form data before changing user role", formData)
+                  const userData = JSON.stringify([{
+                    id: userId,
+                    // id: formData.user_id,
+                    // id: userIdViewing,
+                    // id: parsedPP.user_id,
+                    last_modified_by: session?.userData.email,
+                    synced_date: new Date().toISOString(),
+                    role_id: "37544f59-f3ba-45df-ae0b-c8fa4e4ce446",
+                    push_status_id: 2,
+                    email: email
+                    // remarks: "Role has been changed",
+                  }])
+                  console.log("User Data", userData)
+                  // alert("user data" + typeof userData)
                   const resUserRole = await fetch(
                     process.env.NEXT_PUBLIC_API_BASE_URL_KCIS +
-                      "auth_users/update",
+                    "auth_users/update/user_role/",
                     {
                       method: "POST",
                       headers: {
                         Authorization: `bearer ${onlinePayload.token}`,
                         "Content-Type": "application/json",
                       },
-                      body: JSON.stringify({
-                        id: parsedPP.user_id,
-                        last_modified_by: session?.userData.email,
-                        remarks: "Role has been changed",
-                        synced_date: new Date().toISOString(),
-                        role_id: "37544f59-f3ba-45df-ae0b-c8fa4e4ce446",
-                        push_status_id: 2,
-                      }),
+                      body: userData,
                     }
                   );
                   // role_id: "37544f59-f3ba-45df-ae0b-c8fa4e4ce446", //cfw beneficiary
@@ -2278,31 +2325,34 @@ export default function PersonProfileForm({ user_id_viewing }: any) {
             }
 
             debugger;
+            const record = await dexieDb.person_profile.get(userIdViewing);
+            const userId = record?.user_id
+            const email = record?.email
             // email the assessment
             if (parsedlsAssessment.status_id == 1) {
               //meaning eligible
-              // sendEmail(
-              //   formData.first_name,
-              //   // "dwightentico@gmail.com",
-              //   formData.email,
-              //   "CFW Beneficiary Eligibility Assessment",
-              //   `Congratulations! You have been assessed as <strong>ELIGIBLE</strong> under the KALAHI-CIDSS Cash-for-Work Program. We look forward to your participation in the program.`
-              // );
-            } else if (parsedlsAssessment.status_id == 20) {
-              //meaning eligible
               sendEmail(
-                formData.first_name,
+                formData.first_name || record?.first_name,
                 // "dwightentico@gmail.com",
-                formData.email,
+                formData.email || email,
+                "CFW Beneficiary Eligibility Assessment",
+                `Congratulations! You have been assessed as <strong>ELIGIBLE</strong> under the KALAHI-CIDSS Cash-for-Work Program. We look forward to your participation in the program.`
+              );
+            } else if (parsedlsAssessment.status_id == 20) {
+
+              sendEmail(
+                formData.first_name || record?.first_name,
+                // "dwightentico@gmail.com",
+                formData.email || email,
                 "CFW Beneficiary Eligibility Assessment",
                 `We regret to inform you that you have not been selected as a Cash-for-Work Beneficiary at this time due to ${parsedlsAssessment.assessment}. Thank you for your interest and participation in the program.`
               );
             } else if (parsedlsAssessment.status_id == 10) {
               //meaning for compliance
               sendEmail(
-                formData.first_name,
+                formData.first_name || record?.first_name,
                 // "dwightentico@gmail.com",
-                formData.email,
+                formData.email || email,
                 "CFW Beneficiary Eligibility Assessment",
                 `Your application is currently under review for compliance. Please ensure that all required documents and information are submitted promptly to avoid delays in the assessment process.<br/><br/>Assessment Notes:<br/><br/> ${parsedlsAssessment.assessment}`
               );
@@ -2454,7 +2504,11 @@ export default function PersonProfileForm({ user_id_viewing }: any) {
   //   // setBtnSaveEnabled(false);
   //   // setIsAccepted(false);
   // })
+  const handleRoleContinue = (value: boolean) => {
+    setIsNewRegister(value);
+  };
 
+  // fetch data
   useEffect(() => {
     debugger;
     const fetchData = async () => {
@@ -2473,6 +2527,9 @@ export default function PersonProfileForm({ user_id_viewing }: any) {
 
         const modality = await getOfflineLibModalityOptions(); //await getModalityLibraryOptions();
         setModalityOptions(modality);
+
+        const roles = await getOfflineRoles();
+        setRolesOptions(roles)
 
         const extension_name = await getOfflineExtensionLibraryOptions(); //await getExtensionNameLibraryOptions();
         setExtensionNameOptions(extension_name);
@@ -2510,8 +2567,15 @@ export default function PersonProfileForm({ user_id_viewing }: any) {
           setDisplayPic(
             "https://kcnfms.dswd.gov.ph" + existingRecord.file_path
           );
-         
+
         } else {
+
+          // check it in the localStorage
+          const lsAtt = localStorage.getItem("attachments")
+          if (lsAtt) {
+            const parsedLsAtt = JSON.parse(lsAtt)
+
+          }
           console.warn("🚫 No valid file_path found");
           setHasProfilePicture(false);
         }
@@ -2559,32 +2623,7 @@ export default function PersonProfileForm({ user_id_viewing }: any) {
           })
         );
 
-        // debugger
-        // if (!userIdViewing) {
-        //   // debugger
-        //   // get the family members by  person_profile_id
-        //   if (!dexieDb.isOpen()) await dexieDb.open(); // Ensure DB is open
-        //   // const existingRecordsFamComp = await dexieDb.person_profile_family_composition.toArray();
-        //   const existingRecordsFamComp = await dexieDb.person_profile_family_composition
-        //     .where("person_profile_id")
-        //     .equals() //profile picture
-        //     // .and((record) => record.user_id === _session.id) // Add criteria for user_id
-        //     .first();
-        //   if (existingRecordsFamComp) {
-        //     setFormFamilyCompositionData([existingRecordsFamComp])
-        //   } else {
 
-        //     // if wala sa dexie then check sa localstorage
-        //     const lsFC = localStorage.getItem("family_composition");
-        //     if (lsFC) {
-        //       const parsedFC = JSON.parse(lsFC);
-        //       setFormFamilyCompositionData(parsedFC)
-        //     } else {
-        //       setFormFamilyCompositionData([])
-        //       console.log("No record found!")
-        //     }
-        //   }
-        // }
 
         if (!userIdViewing) {
           localStorage.removeItem("attachments");
@@ -2595,206 +2634,271 @@ export default function PersonProfileForm({ user_id_viewing }: any) {
     };
 
     fetchData();
+    if (!userIdViewing) {
+      // meaning bene ito
+      // determine if new inputs
+      //  check if my nakalagay ng first name sa person_profile localstorage
+      const fetchDataFromDexie = async () => {
+        const result = await dexieDb.person_profile
+          .where("user_id")
+          .equals(_session.id)
+          .first();
+
+        if (result) {
+          const lsPP = result;
+          if (lsPP) {
+            if (lsPP.first_name) {
+              setIsNewRegister(false)
+              setFormData(lsPP);
+            }
+            else {
+              setIsNewRegister(true)
+            }
+            // const foundUser = parsedLsPP.map((user: any) => user.user_id === _session.id)
+
+          }
+
+        } else {
+          const lsPP = localStorage.getItem("person_profile")
+          if (lsPP) {
+            const parsedLsPP = JSON.parse(lsPP)
+            if (parsedLsPP.first_name) {
+              setIsNewRegister(false)
+            }
+            else {
+              setIsNewRegister(true)
+            }
+            // const foundUser = parsedLsPP.map((user: any) => user.user_id === _session.id)
+
+          } else {
+            setIsNewRegister(true)
+          }
+          // setIsNewRegister(true)
+        }
+      }
+      fetchDataFromDexie()
+      const lsSelRole = localStorage.getItem("selected_role")
+      if (lsSelRole) {
+        const parseSelRole = JSON.parse(lsSelRole)
+        setSelectedRoleNew(parseSelRole)
+      }
+
+      setHasPhilsysId(
+        localStorage.getItem("person_profile")
+          ? !!JSON.parse(localStorage.getItem("person_profile")!).has_philsys_id
+          : true
+      );
+    } else {
+      // alert("Viewing")
+    }
+    // location.reload()
   }, []);
 
   // useEffect(() => {
   //   // window.location.reload();
   //   console.log("User ID Viewing: ", userIdViewing);
   // },[userIdViewing])
-  useEffect(() => {
-    // debugger
-    const fetchData = async () => {
-      try {
-        await dexieDb.open();
-        await dexieDb.transaction(
-          "r",
-          [
-            dexieDb.person_profile,
-            dexieDb.person_profile_sector,
-            dexieDb.person_profile_disability,
-            dexieDb.person_profile_family_composition,
-            dexieDb.attachments,
-            dexieDb.person_profile_cfw_fam_program_details,
-          ],
-          async () => {
-            const searchByUserId = userIdViewing ? userIdViewing : session?.id;
-            if (searchByUserId != null || searchByUserId != undefined) {
-              // Fetch Profile (Dexie first, then LocalStorage)
-              // alert("search id is : " + searchByUserId);
-              debugger;
-              let profile: IPersonProfile | null = null;
-              if (userIdViewing) {
-                // setUserIdViewing(userIdViewing);
-                profile =
-                  (await dexieDb.person_profile
-                    .where("id")
-                    .equals(searchByUserId)
-                    .first()) || null;
-              } else {
-                profile =
-                  (await dexieDb.person_profile
-                    .where("user_id")
-                    .equals(searchByUserId)
-                    .first()) || null;
-              }
-              // let profile: IPersonProfile | null = (await dexieDb.person_profile.where("user_id").equals(session.id).first()) || null;
-              // alert(typeof profile)
 
-              if (!profile) {
-                const storedProfile = JSON.parse(
-                  localStorage.getItem("person_profile") || "null"
-                );
-                if (storedProfile && storedProfile.user_id === searchByUserId) {
-                  profile = storedProfile;
-                }
-                // alert(profile)
-              }
+  // for optimizing
+  // useEffect(() => {
 
-              if (
-                (profile && profile.user_id === session?.id) ||
-                (profile && profile.id === userIdViewing)
-              ) {
-                setFormData(profile);
-              } else {
-                localStorage.removeItem("person_profile");
-                updateFormData({
-                  civil_status_id: 4,
-                  id: uuidv4(),
-                  created_by: session?.userData.email,
-                  user_id: session?.id,
-                }); // Default value
-              }
+  //   // debugger
+  //   const fetchData = async () => {
+  //     try {
+  //       await dexieDb.open();
+  //       await dexieDb.transaction(
+  //         "r",
+  //         [
+  //           dexieDb.person_profile,
+  //           dexieDb.person_profile_sector,
+  //           dexieDb.person_profile_disability,
+  //           dexieDb.person_profile_family_composition,
+  //           dexieDb.attachments,
+  //           dexieDb.person_profile_cfw_fam_program_details,
+  //         ],
+  //         async () => {
+  //           const searchByUserId = userIdViewing ? userIdViewing : session?.id;
+  //           if (searchByUserId != null || searchByUserId != undefined) {
+  //             // Fetch Profile (Dexie first, then LocalStorage)
+  //             // alert("search id is : " + searchByUserId);
+  //             debugger;
+  //             let profile: IPersonProfile | null = null;
+  //             if (userIdViewing) {
+  //               // setUserIdViewing(userIdViewing);
+  //               profile =
+  //                 (await dexieDb.person_profile
+  //                   .where("id")
+  //                   .equals(searchByUserId)
+  //                   .first()) || null;
+  //             } else {
+  //               profile =
+  //                 (await dexieDb.person_profile
+  //                   .where("user_id")
+  //                   .equals(searchByUserId)
+  //                   .first()) || null;
+  //             }
+  //             // let profile: IPersonProfile | null = (await dexieDb.person_profile.where("user_id").equals(session.id).first()) || null;
+  //             // alert(typeof profile)
 
-              // Fetch Sectors (LocalStorage first, then Dexie)
-              let sectors: IPersonProfileSector[] | [] =
-                (await dexieDb.person_profile_sector
-                  .where("person_profile_id")
-                  .equals(profile?.id ?? "")
-                  .toArray()) || [];
+  //             if (!profile) {
+  //               const storedProfile = JSON.parse(
+  //                 localStorage.getItem("person_profile") || "null"
+  //               );
+  //               if (storedProfile && storedProfile.user_id === searchByUserId) {
+  //                 profile = storedProfile;
+  //               }
+  //               // alert(profile)
+  //             }
 
-              if (!Array.isArray(sectors) || sectors.length === 0) {
-                sectors =
-                  JSON.parse(localStorage.getItem("person_sectors") || "[]") ||
-                  [];
-              }
+  //             if (
+  //               (profile && profile.user_id === session?.id) ||
+  //               (profile && profile.id === userIdViewing)
+  //             ) {
+  //               setFormData(profile);
+  //             } else {
+  //               localStorage.removeItem("person_profile");
+  //               updateFormData({
+  //                 civil_status_id: 4,
+  //                 id: uuidv4(),
+  //                 created_by: session?.userData.email,
+  //                 user_id: session?.id,
+  //               }); // Default value
+  //             }
 
-              const userSectors = sectors.filter(
-                (sector) => sector.person_profile_id === profile?.id
-              );
-              if (userSectors.length > 0) {
-                updateFormSectorData(userSectors); // Update only the sectors created by the current user
-              }
+  //             // Fetch Sectors (LocalStorage first, then Dexie)
+  //             let sectors: IPersonProfileSector[] | [] =
+  //               (await dexieDb.person_profile_sector
+  //                 .where("person_profile_id")
+  //                 .equals(profile?.id ?? "")
+  //                 .toArray()) || [];
 
-              // Fetch Disabilities (LocalStorage first, then Dexie)
-              let pwd: IPersonProfileDisability[] | [] =
-                (await dexieDb.person_profile_disability
-                  .where("person_profile_id")
-                  .equals(profile?.id ?? "")
-                  .toArray()) || [];
-              if (!Array.isArray(pwd) || pwd.length === 0) {
-                pwd =
-                  JSON.parse(
-                    localStorage.getItem("person_disabilities") || "[]"
-                  ) || [];
-              }
+  //             if (!Array.isArray(sectors) || sectors.length === 0) {
+  //               sectors =
+  //                 JSON.parse(localStorage.getItem("person_sectors") || "[]") ||
+  //                 [];
+  //             }
 
-              const userPwd = pwd.filter(
-                (disability) => disability.person_profile_id === profile?.id
-              );
-              if (userPwd.length > 0) {
-                updateDisabilitiesData(pwd);
-              }
+  //             const userSectors = sectors.filter(
+  //               (sector) => sector.person_profile_id === profile?.id
+  //             );
+  //             if (userSectors.length > 0) {
+  //               updateFormSectorData(userSectors); // Update only the sectors created by the current user
+  //             }
 
-              // Fetch Family Composition (LocalStorage first, then Dexie)
-              let family: IPersonProfileFamilyComposition[] | [] =
-                (await dexieDb.person_profile_family_composition
-                  .where("person_profile_id")
-                  .equals(profile?.id ?? "")
-                  .toArray()) || [];
-              if (!Array.isArray(family) || family.length === 0) {
-                family =
-                  JSON.parse(
-                    localStorage.getItem("family_composition") || "[]"
-                  ) || [];
-              }
-              // debugger
-              console.log("The type of family  is ", typeof family);
+  //             // Fetch Disabilities (LocalStorage first, then Dexie)
+  //             let pwd: IPersonProfileDisability[] | [] =
+  //               (await dexieDb.person_profile_disability
+  //                 .where("person_profile_id")
+  //                 .equals(profile?.id ?? "")
+  //                 .toArray()) || [];
+  //             if (!Array.isArray(pwd) || pwd.length === 0) {
+  //               pwd =
+  //                 JSON.parse(
+  //                   localStorage.getItem("person_disabilities") || "[]"
+  //                 ) || [];
+  //             }
 
-              // const userFamily = family.filter((member) => member.person_profile_id === profile?.id);
-              debugger;
-              const userFamily = family.filter(
-                (member) => member.person_profile_id === profile?.id
-              );
-              if (userFamily.length > 0) {
-                updateFormFamilyCompositionData(userFamily, "new", "0");
-              }
+  //             const userPwd = pwd.filter(
+  //               (disability) => disability.person_profile_id === profile?.id
+  //             );
+  //             if (userPwd.length > 0) {
+  //               updateDisabilitiesData(pwd);
+  //             }
 
-              // Fetch CFW Family Program Details (Dexie first, then LocalStorage)
-              let cfwFamDetails: Partial<IPersonProfileFamilyComposition>[] =
-                await dexieDb.person_profile_cfw_fam_program_details
-                  .where("person_profile_id")
-                  .equals(profile?.id ?? "")
-                  .toArray();
+  //             // Fetch Family Composition (LocalStorage first, then Dexie)
+  //             let family: IPersonProfileFamilyComposition[] | [] =
+  //               (await dexieDb.person_profile_family_composition
+  //                 .where("person_profile_id")
+  //                 .equals(profile?.id ?? "")
+  //                 .toArray()) || [];
+  //             if (!Array.isArray(family) || family.length === 0) {
+  //               family =
+  //                 JSON.parse(
+  //                   localStorage.getItem("family_composition") || "[]"
+  //                 ) || [];
+  //             }
+  //             // debugger
+  //             console.log("The type of family  is ", typeof family);
 
-              if (!Array.isArray(cfwFamDetails) || cfwFamDetails.length === 0) {
-                cfwFamDetails =
-                  JSON.parse(
-                    localStorage.getItem("person_cfw_program_details") || "null"
-                  ) || [];
-              }
+  //             // const userFamily = family.filter((member) => member.person_profile_id === profile?.id);
+  //             debugger;
+  //             const userFamily = family.filter(
+  //               (member) => member.person_profile_id === profile?.id
+  //             );
+  //             if (userFamily.length > 0) {
+  //               updateFormFamilyCompositionData(userFamily, "new", "0");
+  //             }
 
-              const userCfwFamDetails = cfwFamDetails.filter(
-                (detail) => detail.person_profile_id === profile?.id
-              );
-              if (userCfwFamDetails.length > 0) {
-                updateCFWFormData(cfwFamDetails);
-              }
+  //             // Fetch CFW Family Program Details (Dexie first, then LocalStorage)
+  //             let cfwFamDetails: Partial<IPersonProfileFamilyComposition>[] =
+  //               await dexieDb.person_profile_cfw_fam_program_details
+  //                 .where("person_profile_id")
+  //                 .equals(profile?.id ?? "")
+  //                 .toArray();
 
-              const person_attachments = await dexieDb.attachments
-                .where("file_type")
-                .notEqual("")
-                .and((x) => x.record_id == profile?.id)
-                .toArray();
-              if (
-                person_attachments !== null &&
-                person_attachments !== undefined &&
-                person_attachments.length > 0
-              ) {
-                setFormAttachmentsData(person_attachments);
-              }
+  //             if (!Array.isArray(cfwFamDetails) || cfwFamDetails.length === 0) {
+  //               cfwFamDetails =
+  //                 JSON.parse(
+  //                   localStorage.getItem("person_cfw_program_details") || "null"
+  //                 ) || [];
+  //             }
 
-              // get the userid for viewing of admin
-              const lsuserIdForViewing = localStorage.getItem("userIdViewOnly");
-              if (lsuserIdForViewing) {
-                const parsedUserIdForViewing = JSON.parse(lsuserIdForViewing);
-                if (parsedUserIdForViewing) {
-                  setUserIdViewing(parsedUserIdForViewing);
-                  console.log("User ID for viewing: ", parsedUserIdForViewing);
-                }
-              }
+  //             const userCfwFamDetails = cfwFamDetails.filter(
+  //               (detail) => detail.person_profile_id === profile?.id
+  //             );
+  //             if (userCfwFamDetails.length > 0) {
+  //               updateCFWFormData(cfwFamDetails);
+  //             }
 
-              const lsPP = localStorage.getItem("attachments");
-              if (lsPP) {
-                const parsedPP = JSON.parse(lsPP);
-                const profilePicture = parsedPP.find(
-                  (att: any) => att.file_id === 13
-                );
-                if (profilePicture) {
-                  setDisplayPic(
-                    "https://kcnfms.dswd.gov.ph/media/blobs/" +
-                      profilePicture.file_name
-                  );
-                }
-              }
-            }
-          }
-        );
-      } catch (error) {
-        console.error("Error fetching Person Profile from IndexedDB", error);
-      }
-    };
-    fetchData();
-  }, [session, userIdViewing]);
+  //             const person_attachments = await dexieDb.attachments
+  //               .where("file_type")
+  //               .notEqual("")
+  //               .and((x) => x.record_id == profile?.id)
+  //               .toArray();
+  //             if (
+  //               person_attachments !== null &&
+  //               person_attachments !== undefined &&
+  //               person_attachments.length > 0
+  //             ) {
+  //               setFormAttachmentsData(person_attachments);
+  //             }
+
+  //             // get the userid for viewing of admin
+  //             const lsuserIdForViewing = localStorage.getItem("userIdViewOnly");
+  //             if (lsuserIdForViewing) {
+  //               const parsedUserIdForViewing = JSON.parse(lsuserIdForViewing);
+  //               if (parsedUserIdForViewing) {
+  //                 setUserIdViewing(parsedUserIdForViewing);
+  //                 console.log("User ID for viewing: ", parsedUserIdForViewing);
+  //               }
+  //             }
+
+  //             const lsPP = localStorage.getItem("attachments");
+  //             if (lsPP) {
+  //               const parsedPP = JSON.parse(lsPP);
+  //               const profilePicture = parsedPP.find(
+  //                 (att: any) => att.file_id === 13
+  //               );
+  //               if (profilePicture) {
+  //                 setDisplayPic(
+  //                   "https://kcnfms.dswd.gov.ph/media/blobs/" +
+  //                   profilePicture.file_name
+  //                 );
+  //               }
+  //             }
+  //           }
+  //         }
+  //       );
+  //     } catch (error) {
+  //       console.error("Error fetching Person Profile from IndexedDB", error);
+  //     }
+  //   };
+  //   fetchData();
+
+
+  // }, [_session, session, userIdViewing]);
+  // end for optimizing
+
 
   const fetchData = async () => {
     try {
@@ -2980,680 +3084,1101 @@ export default function PersonProfileForm({ user_id_viewing }: any) {
       // Update the state with the blob URL for the avatar
       setDisplayPic(URL.createObjectURL(blob));
       fetchData();
-    } catch (error) {}
+    } catch (error) { }
   };
-  const handleUpload = () => {};
+  const handleUpload = () => { };
   // const handleRouteToSuccess = () => {
   // router.push("/personprofile/form/success")
   // }
+
+  // const CheckForProfilePicture = async () => {
+  //   dexieDb.open();
+  //   const profpic = await dexieDb.attachments.get({ created_by: _session.userData.email });
+  //   if (!profpic) {
+  //     errorToast(
+  //       "Profile picture is required. Please upload one to continue.",
+  //       "basicinformation",
+  //       ""
+  //     ); return;
+  //     // alert("Please upload profile picture")
+  //     // return
+  //   }
+  // }
+  function CheckForProfilePicture() {
+
+
+  }
+
+  const handleSubmitNonBeneProfileRegistration = () => {
+    dexieDb.open();
+
+    dexieDb.attachments.get({ created_by: _session.userData.email })
+      .then((profpic) => {
+        if (!profpic) {
+          errorToast(
+            "Profile picture is required. Please upload one to continue.",
+            "basicinformation",
+            ""
+          );
+          return
+        }
+
+
+        // alert(_session.id)
+        // return
+        const lsPP = localStorage.getItem("person_profile")
+        if (lsPP) {
+          const parsedLsPP = JSON.parse(lsPP)
+          if (parsedLsPP.modality_id == 25) {
+
+            // validation of personal information
+            if (!parsedLsPP.first_name) { errorToast("First name is required!", "basic_information", "first_name"); return; }
+            if (parsedLsPP.has_middle_name == undefined && !parsedLsPP.middle_name) { errorToast("Middle name is required!", "basic_information", "middle_name"); return; }
+            if (parsedLsPP.has_middle_name != undefined && parsedLsPP.has_middle_name == true && !parsedLsPP.middle_name) { errorToast("Middle name is required!", "basic_information", "middle_name"); return; }
+            if (!parsedLsPP.last_name) { errorToast("Last name is required!", "basic_information", "last_name"); return; }
+            if (!parsedLsPP.sex_id) { errorToast("Sex field is required!", "basic_information", "sex_id"); return; }
+            if (!parsedLsPP.age || parsedLsPP.age < 18 || parsedLsPP.age >= 71) { errorToast("Invalid age! Please enter a valid age between 18 and 70 years old.", "basic_information", "birthdate"); return; }
+            if (!parsedLsPP?.philsys_id_no && hasPhilsysId) { errorToast("12-digit PhilSys ID number is required!", "basic_information", "philsys_id_no"); return; }
+            if (hasPhilsysId && parsedLsPP.philsys_id_no.length <= 11) { errorToast("12-digit PhilSys ID number is required!", "basic_information", "philsys_id_no"); return; }
+            if (!parsedLsPP.birthplace) { errorToast("Birthplace is required!", "basic_information", "birthplace"); return; }
+            if (!parsedLsPP?.region_code) { errorToast("Region is required!", "contact", "region_contact_details_permanent_address"); return; }
+            // primary / permanent address
+            if (!parsedLsPP?.province_code) return errorToast("Province is required!", "contact", "province_contact_details_permanent_address");
+            if (!parsedLsPP?.city_code) return errorToast("City/Municipality is required!", "contact", "municipality_contact_details_permanent_address");
+            if (!parsedLsPP?.brgy_code) return errorToast("Barangay is required!", "contact", "barangay_contact_details_permanent_address");
+            if (!parsedLsPP?.sitio) return errorToast("Sitio is required!", "contact", "sitio");
+
+            // present address
+            if (!parsedLsPP?.region_code_present_address) return errorToast("Present Region is required!", "contact", "region_contact_details_present_address");
+            if (!parsedLsPP?.province_code_present_address) return errorToast("Present Province is required!", "contact", "province_contact_details_present_address");
+            if (!parsedLsPP?.city_code_present_address) return errorToast("Present City/Municipality is required!", "contact", "municipality_contact_details_present_address");
+            if (!parsedLsPP?.brgy_code_present_address) return errorToast("Present Barangay is required!", "contact", "barangay_contact_details_present_address");
+            if (!parsedLsPP?.sitio_present_address) return errorToast("Present Sitio is required!", "contact", "sitio_present_address");
+
+            // contact details
+            if (!parsedLsPP?.cellphone_no || parsedLsPP.cellphone_no.length < 13)
+              return errorToast("Primary cellphone number is required!", "contact", "cellphone_no");
+
+            if (!parsedLsPP?.email) return errorToast("Email is required!", "contact", "email");
+
+            const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailPattern.test(parsedLsPP.email)) return errorToast("Invalid email format! Please enter a valid email.", "contact", "email");
+
+            const lsDA = localStorage.getItem("assigned_deployment_area")
+            if (lsDA) {
+              const parseLsDA = JSON.parse(lsDA)
+              if (!parseLsDA.assigned_deployment_area_category_id) {
+                errorToast(
+                  "Preferred Deployment Area category is required!",
+                  "deployment",
+                  "assigned_deployment_area_category_id"
+                );
+                return
+              }
+              if (!parseLsDA.assigned_deployment_area_id) {
+                if (parseLsDA.assigned_deployment_area_category_id == 1) {
+                  errorToast(
+                    "Preferred Deployment Area is required!",
+                    "deployment",
+                    "assigned_deployment_area_id_company"
+                  );
+                  return;
+                } else {
+                  errorToast(
+                    "Preferred Deployment Area is required!",
+                    "deployment",
+                    "assigned_deployment_area_id_school"
+                  ); return;
+                }
+
+
+              }
+
+              // save to person_profile ✔️
+              // save to cfw_assessment ✔️
+              // update the user role_id, permission 
+              // profile picture
+              let formPersonProfile: IPersonProfile;
+              let person_profile_id_saving = uuidv4();
+              formPersonProfile = {
+                id: person_profile_id_saving,
+                modality_id: parsedLsPP?.modality_id,
+                extension_name_id: parsedLsPP?.extension_name_id ?? 0,
+                birthplace: parsedLsPP?.birthplace ?? "",
+                sex_id: parsedLsPP?.sex_id ?? 0,
+                first_name: parsedLsPP?.first_name?.toLowerCase().trim() ?? "",
+                last_name: parsedLsPP?.last_name?.toLowerCase().trim() ?? "",
+                middle_name: parsedLsPP?.middle_name?.toLowerCase().trim() ?? "",
+                has_middle_name: parsedLsPP?.has_middle_name ?? false,
+                civil_status_id: parsedLsPP?.civil_status_id ?? 0,
+                birthdate: parsedLsPP?.birthdate ?? "",
+                age: parsedLsPP?.age ?? 0,
+                has_philsys_id: parsedLsPP?.has_philsys_id ?? false,
+                philsys_id_no: parsedLsPP?.philsys_id_no ?? "",
+                sitio: parsedLsPP?.sitio ?? null,
+                cellphone_no: parsedLsPP?.cellphone_no ?? null,
+                cellphone_no_secondary: parsedLsPP?.cellphone_no_secondary ?? null,
+                email: parsedLsPP?.email?.toLowerCase().trim() ?? "",
+                sitio_present_address: parsedLsPP?.sitio_present_address ?? null,
+                region_code_present_address: parsedLsPP?.region_code_present_address ?? null,
+                province_code_present_address: parsedLsPP?.province_code_present_address ?? null,
+                city_code_present_address: parsedLsPP?.city_code_present_address ?? null,
+                brgy_code_present_address: parsedLsPP?.brgy_code_present_address ?? null,
+                brgy_code_current: parsedLsPP?.brgy_code_current ?? null,
+                region_code: parsedLsPP?.region_code ?? "",
+                province_code: parsedLsPP?.province_code ?? "",
+                city_code: parsedLsPP?.city_code ?? "",
+                brgy_code: parsedLsPP?.brgy_code ?? "",
+                profile_picture: parsedLsPP?.profile_picture ?? "",
+                is_permanent_same_as_current_address: parsedLsPP?.is_permanent_same_as_current_address ?? null,
+                has_immediate_health_concern: parsedLsPP?.has_immediate_health_concern ?? null,
+                immediate_health_concern: parsedLsPP?.immediate_health_concern ?? "",
+                school_id: parsedLsPP?.school_id ?? 0,
+                is_graduate: parsedLsPP?.is_graduate ?? false,
+                campus: parsedLsPP?.campus ?? "",
+                school_address: parsedLsPP?.school_address ?? "",
+                course_id: parsedLsPP?.course_id ?? 0,
+                year_graduated: parsedLsPP?.year_graduated ?? "",
+                year_level_id: parsedLsPP?.year_level_id ?? 0,
+                hasoccupation: parsedLsPP?.hasoccupation ?? false,
+                current_occupation: parsedLsPP?.current_occupation ?? "",
+                id_card: parsedLsPP?.id_card ?? 0,
+                occupation_id_card_number: parsedLsPP?.occupation_id_card_number ?? "",
+                skills: parsedLsPP?.skills ?? "",
+                deployment_area_name: parsedLsPP?.deployment_area_name ?? "",
+                deployment_area_id: parsedLsPP?.deployment_area_id ?? 0,
+                deployment_area_address: parsedLsPP?.deployment_area_address ?? "",
+                preffered_type_of_work_id: parsedLsPP?.preffered_type_of_work_id ?? 0,
+
+                modality_sub_category_id: parsedLsPP?.modality_sub_category_id ?? null,
+
+                is_pwd_representative: parsedLsPP?.is_pwd_representative ?? null,
+
+                ip_group_id: parsedLsPP?.ip_group_id ?? 0,
+
+                cwf_category_id: null,
+                cfwp_id_no: generated_cfw_id_no(),
+                no_of_children: null,
+                is_pantawid: false,
+                is_pantawid_leader: false,
+                is_slp: false,
+                address: null,
+                is_lgu_official: false,
+                is_mdc: false,
+                is_bdc: false,
+                is_bspmc: false,
+                is_bdrrmc_bdc_twg: false,
+                is_bdrrmc_expanded_bdrrmc: false,
+                is_mdrrmc: false,
+                is_hh_head: false,
+                academe: 0,
+                business: 0,
+                differently_abled: 0,
+                farmer: 0,
+                fisherfolks: 0,
+                government: 0,
+                is_ip: parsedLsPP?.is_ip ?? false,
+                is_pwd: parsedLsPP?.is_pwd ?? false,
+                ngo: 0,
+                po: 0,
+                religious: 0,
+                senior_citizen: 0,
+                women: 0,
+                solo_parent: 0,
+                out_of_school_youth: 0,
+                children_and_youth_in_need_of_special_protection: 0,
+                family_heads_in_need_of_assistance: 0,
+                affected_by_disaster: 0,
+                persons_with_disability: false,
+                others: null,
+                relationship_to_family_member_id: null,
+                family_member_name_id: null,
+                has_program_details: false,
+
+                //CFW Representative
+                representative_last_name: parsedLsPP?.representative_last_name ?? null,
+                representative_first_name: parsedLsPP?.representative_first_name ?? null,
+                representative_middle_name: parsedLsPP?.representative_middle_name ?? null,
+                representative_extension_name_id: parsedLsPP?.representative_extension_name_id ?? null,
+                representative_sitio: parsedLsPP?.representative_sitio ?? null,
+                representative_brgy_code: parsedLsPP?.representative_brgy_code ?? null,
+                representative_relationship_to_beneficiary_id: parsedLsPP?.representative_relationship_to_beneficiary_id ?? null,
+                representative_birthdate: parsedLsPP?.representative_birthdate ?? null,
+                representative_age: parsedLsPP?.representative_age ?? null,
+                representative_occupation: parsedLsPP?.representative_occupation ?? null,
+                representative_monthly_salary: parsedLsPP?.representative_monthly_salary ?? null,
+                representative_educational_attainment_id: parsedLsPP?.representative_educational_attainment_id ?? null,
+                representative_sex_id: parsedLsPP?.representative_sex_id ?? null,
+                representative_contact_number: parsedLsPP?.representative_contact_number ?? null,
+                representative_id_card_id: parsedLsPP?.representative_id_card_id ?? null,
+                representative_id_card_number: parsedLsPP?.representative_id_card_number ?? null,
+                representative_address: parsedLsPP?.representative_address ?? null,
+                representative_civil_status_id: parsedLsPP?.representative_civil_status_id ?? null,
+                representative_has_health_concern: parsedLsPP?.representative_has_health_concern ?? null,
+                representative_health_concern_details: parsedLsPP?.representative_health_concern_details || null,
+                representative_skills: parsedLsPP?.representative_skills || null,
+
+                user_id: _session.id,
+                created_by: _session.userData.email ?? "",
+                created_date: new Date().toISOString(),
+                last_modified_by: null,
+                last_modified_date: null,
+                push_date: new Date().toISOString(),
+                push_status_id: 2,
+                deleted_by: null,
+                deleted_date: null,
+                is_deleted: false,
+                remarks: "Person Profile Created",
+              }
+
+              let cfw_assessment: ICFWAssessment;
+
+              cfw_assessment = {
+                id: uuidv4(),
+                person_profile_id: person_profile_id_saving,
+                deployment_area_category_id: parseLsDA.assigned_deployment_area_category_id,
+                deployment_area_id: parseLsDA.assigned_deployment_area_id,
+                division_office_name: null,
+                assessment: null,
+                number_of_days_program_engagement: null,
+                area_focal_person_id: null,
+                immediate_supervisor_id: null,
+                alternate_supervisor_id: null,
+                cfw_category_id: null,
+                work_plan_id: null, // ✨ bago to master
+                status_id: null,
+                user_id: _session.id,
+                created_date: new Date().toISOString(),
+                last_modified_date: null,
+                last_modified_by: null,
+                push_status_id: 2,
+                push_date: new Date().toISOString(),
+                deleted_date: null,
+                deleted_by: null,
+                is_deleted: false,
+                remarks: "CFW Assessment Created",
+                created_by: _session.userData.email || null,
+
+              }
+
+              // update the users table using email
+
+
+              debugger
+              // alert(_session.id)
+              dexieDb.open();
+              const UpdateUserDexieDb = async () => {
+                const user = await dexieDb.users.get({ email: _session.userData.email });
+
+                if (user) {
+                  const result = await dexieDb.users.update(user.id, {
+                    role_id: selectedRoleNew?.id || "",
+                    last_modified_date: new Date().toISOString(),
+                    last_modified_by: _session.userData.email || "",
+                    push_status_id: 2,
+                    push_date: new Date().toISOString(),
+                    remarks: "Role has been changed"
+                  });
+                  if (result) {
+
+
+                    console.log("User account role has been updated!")
+
+                    const getModuleId = getPermissionIdByRoleName(selectedRoleNew?.role_description || "")
+
+                    const useraccess = await dexieDb.useraccess.get({ user_id: user.id });
+                    if (useraccess) {
+                      const resua = await dexieDb.useraccess.update(useraccess.id, {
+                        // module_id: "4e658b02-705a-43eb-a051-681d54e22e2a", //person profile by default
+                        permission_id: getPermissionIdByRoleName(selectedRoleNew?.role_description || ""),
+                        last_modified_date: new Date().toISOString(),
+                        last_modified_by: _session.userData.email || "",
+                        push_status_id: 2,
+                        push_date: new Date().toISOString(),
+                        remarks: "User Access Permission  has been changed"
+                      })
+                    } else {
+                      console.log("User access not found ")
+                    }
+
+                  } else {
+                    alert("ID not found")
+                  }
+                } else {
+                  console.warn("User not found for email:", _session.userData.email);
+                }
+
+
+
+              }
+              UpdateUserDexieDb()
+
+
+              dexieDb
+                .transaction(
+                  "rw",
+                  [
+                    dexieDb.person_profile,
+                    dexieDb.cfwassessment,
+
+                  ],
+                  async () => {
+                    try {
+                      await dexieDb.person_profile.put(formPersonProfile);
+                      await dexieDb.cfwassessment.put(cfw_assessment);
+                    }
+                    catch (error) {
+                      console.error(
+                        "Error adding Person Profile to IndexedDB",
+                        error
+                      );
+                      return
+                    }
+                  }
+                )
+
+              router.push("/personprofile/form/success");
+              // alert("saving grace")
+              // toast({
+              //   variant: "green",
+              //   title: "Please re-login your account and try again.",
+              //   description:
+              //     "The record has been saved, but the data could not be synchronized at this time.",
+              // });
+
+            }
+
+
+
+          }
+        }
+
+      })
+      .catch((error) => {
+        console.error("Failed to check for profile picture", error);
+        errorToast(
+          "Profile picture is required. Please upload one to continue.",
+          "basicinformation",
+          ""
+        );
+        return
+      });
+
+
+
+
+
+  }
+
+  const getPermissionIdByRoleName = (roleName: string) => {
+    let permissionId = ""
+    switch (roleName) {
+      case "Administrator": permissionId = "5568ea7d-6f12-4ce9-b1e9-adb256e5b057"; break;
+      case "Guest": permissionId = "f38252b5-cc46-4cc1-8353-a49a78708739"; break;
+      case "Finance": permissionId = "5568ea7d-6f12-4ce9-b1e9-adb256e5b057"; break;
+      case "Engineer": permissionId = "5568ea7d-6f12-4ce9-b1e9-adb256e5b057"; break;
+      case "CFW Beneficiary": permissionId = "f38252b5-cc46-4cc1-8353-a49a78708739"; break;
+      case "CFW Immediate Supervisor": permissionId = "5568ea7d-6f12-4ce9-b1e9-adb256e5b057"; break;
+      case "CFW Alternate Supervisor": permissionId = "5568ea7d-6f12-4ce9-b1e9-adb256e5b057"; break;
+      case "CFW HEI Focal Person": permissionId = "5568ea7d-6f12-4ce9-b1e9-adb256e5b057"; break;
+      case "CFW Administrator": permissionId = "5568ea7d-6f12-4ce9-b1e9-adb256e5b057"; break;
+    }
+    return permissionId;
+  }
+  // const getModuleIdByRoleName = (roleName: string) => {
+  //   let moduleId = ""
+  //   switch (roleName) {
+  //     case "Administrator": moduleId = "5568ea7d-6f12-4ce9-b1e9-adb256e5b057"; break;
+  //     case "Guest": moduleId = "4e658b02-705a-43eb-a051-681d54e22e2a"; break; //person profile module
+  //     case "Finance": moduleId = "f8446068-385e-461c-9417-5caf086f103e"; break;
+  //     case "Engineer": moduleId = "ce67be45-b5aa-4272-bcf4-a32abc9d7068"; break;
+  //     case "CFW Beneficiary": moduleId = "4e658b02-705a-43eb-a051-681d54e22e2a"; break;
+  //     case "CFW Immediate Supervisor": moduleId = "4e658b02-705a-43eb-a051-681d54e22e2a"; break;
+  //     case "CFW Alternate Supervisor": moduleId = "4e658b02-705a-43eb-a051-681d54e22e2a"; break;
+  //     case "CFW HEI Focal Person": moduleId = "4e658b02-705a-43eb-a051-681d54e22e2a"; break;
+  //     case "CFW Administrator": moduleId = "4e658b02-705a-43eb-a051-681d54e22e2a"; break;
+  //   }
+  //   return moduleId;
+  // }
   return (
+
     <div className="w-full">
       {/* <Button onClick={() => handleRouteToSuccess()}>Route to success</Button> */}
+      {/* isNewRegister{isNewRegister.toString()} */}
 
-      <Dialog
-        modal={false}
-        open={dataPrivacyOpen}
-        onOpenChange={setDataPrivacyOpen}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="p-5">
-              Data Privacy Statement and Beneficiary Agreement
-            </DialogTitle>
-            <DialogDescription className="max-h-[70vh] overflow-y-auto text-left text-black">
-              <label className="font-bold">
-                Terms and Conditions of Engagement
-              </label>
-              <br />
-              <br />
-              <span>
-                This Agreement shall cover the engagement of the Beneficiary
-                with the CFW during the period provided in the table below. The
-                beneficiary shall at all times:
-              </span>
-              <br />
-              <br />
-              <span>
-                ▶ Observe the proper code of conduct and comply with the
-                office's rules and regulations during deployment.
-                <br />
-                <br />
-                ▶ Attend and participate in KALAHI-CIDSS CFW Program activities,
-                including orientations, discussions, meetings, and training.
-                <br />
-                <br />
-                ▶ Perform assigned tasks efficiently within the timeline set by
-                the work plan.
-                <br />
-                <br />
-                ▶ Render a maximum of 8 hours per day based on agreed working
-                hours; compensation is based on actual hours rendered.
-                <br />
-                <br />
-                ▶ Students shall not report to work during class periods
-                regardless of early dismissal or remote classes.
-                <br />
-                <br />
-                ▶ Inform the immediate supervisor/DSWD/HEI/LGU for leave of
-                absence or other status changes affecting program engagement.
-                <br />
-                <br />
-                ▶ Work performed on days of declared suspension shall count as a
-                full day's work.
-                <br />
-                <br />
-                ▶ Optionally work on weekends/holidays with supervisor approval
-                and no entitlement to overtime pay.
-                <br />
-                <br />
-                ▶ Inform DSWD/HEI/LGU in case of pre-termination due to absence,
-                withdrawal, violation of agreement, or fraud.
-                <br />
-                <br />
-                ▶ Replacement beneficiaries will render the remaining program
-                days of the replaced beneficiary.
-                <br />
-                <br />
-                ▶ Travel outside the official station requires approval with no
-                additional benefits.
-                <br />
-                <br />
-                ▶ DSWD is not liable for any health or medical concerns; the
-                beneficiary is responsible for health insurance.
-                <br />
-                <br />
-                ▶ Health-related concerns must be disclosed in the CFW Profile
-                Form.
-                <br />
-                <br />
-              </span>
 
-              <span className="font-bold">Release of Financial Assistance</span>
-              <br />
-              <br />
 
-              <span>
-                ▶ Financial assistance is based on the regional daily wage for
-                non-agricultural workers as per DOLE-NWPC.
-                <br />
-                <br />
-                ▶ Financial assistance is computed based on DTR and supported by
-                the Accomplishment Report.
-                <br />
-                <br />
-                ▶ Sign documentary requirements consistently with the valid ID
-                submitted during engagement.
-                <br />
-                <br />
-                ▶ Submit DTR and AR on time for processing financial assistance.
-                <br />
-                <br />
-                ▶ Comply with corrections flagged by the DSWD KALAHI-CIDSS team
-                for documentary requirements.
-                <br />
-                <br />
-                ▶ Submit a photocopy of a valid government-issued ID for
-                verification purposes.
-                <br />
-                <br />
-                ▶ In case of delayed financial assistance release, the
-                beneficiary may suspend or continue deployment.
-                <br />
-                <br />
-                ▶ Certificate of Completion/Participation is based on attendance
-                and job performance assessment.
-                <br />
-                <br />
-                ▶ Submit the KALAHI-CIDSS CFWP Evaluation Form for program
-                enhancement.
-                <br />
-                <br />
-              </span>
+      {/* { JSON.stringify(rolesOptions) } */}
+      {isNewRegister == true ? (
+        <RoleSelectionComponent
+          roleOptions={rolesOptions}
+          onContinue={handleRoleContinue}
+          onHandleSelectedRole={handleSelectRoleNew}
+        />
 
-              <span className="font-bold">Other Conditions</span>
-              <br />
-              <br />
-
-              <span>
-                ▶ No employee-employer relationship is established; only agreed
-                financial assistance applies.
-                <br />
-                <br />
-                ▶ Documents are primarily signed by the immediate supervisor; an
-                alternate supervisor may sign if unavailable.
-                <br />
-                <br />
-                ▶ Address grievances through proper DSWD KALAHI-CIDSS channels.
-                <br />
-                <br />
-                ▶ Maintain confidentiality of records, documents, and sensitive
-                information.
-                <br />
-                <br />
-                ▶ Use appropriate channels, not social media, for raising issues
-                and concerns.
-                <br />
-                <br />
-                ▶ Maintain confidentiality of non-public information during and
-                after the program.
-                <br />
-                <br />
-              </span>
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="p-4">
-            <Button
-              onClick={() => {
-                confirmSave();
-                setDataPrivacyOpen(false);
-              }}
-            >
-              CONFIRM SUBMISSION
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="mb-2 flex flex-col md:flex-row items-center md:justify-between text-center md:text-left">
-            {/* Logo Section */}
-            <div className="flex-shrink-0">
-              <img
-                src="/images/logos.png"
-                alt="DSWD KC BAGONG PILIPINAS"
-                className="h-12 w-auto"
-              />
-            </div>
-
-            {/* Title Section */}
-            <div className="text-lg font-semibold mt-2 md:mt-0">
-              Beneficiary Profile Form{" "}
-              <span className="text-blue-800">
-                {" "}
-                [ {userIdViewing ? "Reviewing" : "Registration"} ]
-              </span>
-            </div>
-          </CardTitle>
-
-          <CardDescription>
-            <div
-              className={`p-3 bg-gray-100 border border-gray-300 rounded-lg shadow-sm ${
-                userIdViewing ? "hidden" : ""
-              } `}
-            >
-              <h2 className="text-xl font-semibold text-gray-800 mb-2">
-                Important Instructions
-              </h2>
-              {/* <Button onClick={handleUpload} >Upload</Button> */}
-              <p className="text-gray-700 mb-4">
-                Please read and understand the following before proceeding:
-              </p>
-              <ul className="list-disc list-inside text-gray-600 mb-4">
-                <li>
-                  By submitting this form, you agree to the collection, use, and
-                  processing of your personal data in accordance with our{" "}
-                  <span className="text-indigo-600 underline cursor-pointer">
-                    Data Privacy Statement
+      ) : isNewRegister == false ? (
+        <>
+          <Dialog
+            modal={false}
+            open={dataPrivacyOpen}
+            onOpenChange={setDataPrivacyOpen}
+          >
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle className="p-5">
+                  Data Privacy Statement and Beneficiary Agreement
+                </DialogTitle>
+                <DialogDescription className="max-h-[70vh] overflow-y-auto text-left text-black">
+                  <label className="font-bold">
+                    Terms and Conditions of Engagement
+                  </label>
+                  <br />
+                  <br />
+                  <span>
+                    This Agreement shall cover the engagement of the Beneficiary
+                    with the CFW during the period provided in the table below. The
+                    beneficiary shall at all times:
                   </span>
-                  .
-                </li>
-                <li>
-                  Submitting this form does{" "}
-                  <span className="font-bold">not guarantee</span> acceptance
-                  into any program or service. All submissions are subject to
-                  review and approval.
-                </li>
-                <li>
-                  Ensure that all fields are accurately completed. Incomplete or
-                  incorrect information may result in disqualification.
-                </li>
-                <li>
-                  Utilize special characters, such as ñ and Ñ, where
-                  appropriate.
-                </li>
-              </ul>
-            </div>
+                  <br />
+                  <br />
+                  <span>
+                    ▶ Observe the proper code of conduct and comply with the
+                    office's rules and regulations during deployment.
+                    <br />
+                    <br />
+                    ▶ Attend and participate in KALAHI-CIDSS CFW Program activities,
+                    including orientations, discussions, meetings, and training.
+                    <br />
+                    <br />
+                    ▶ Perform assigned tasks efficiently within the timeline set by
+                    the work plan.
+                    <br />
+                    <br />
+                    ▶ Render a maximum of 8 hours per day based on agreed working
+                    hours; compensation is based on actual hours rendered.
+                    <br />
+                    <br />
+                    ▶ Students shall not report to work during class periods
+                    regardless of early dismissal or remote classes.
+                    <br />
+                    <br />
+                    ▶ Inform the immediate supervisor/DSWD/HEI/LGU for leave of
+                    absence or other status changes affecting program engagement.
+                    <br />
+                    <br />
+                    ▶ Work performed on days of declared suspension shall count as a
+                    full day's work.
+                    <br />
+                    <br />
+                    ▶ Optionally work on weekends/holidays with supervisor approval
+                    and no entitlement to overtime pay.
+                    <br />
+                    <br />
+                    ▶ Inform DSWD/HEI/LGU in case of pre-termination due to absence,
+                    withdrawal, violation of agreement, or fraud.
+                    <br />
+                    <br />
+                    ▶ Replacement beneficiaries will render the remaining program
+                    days of the replaced beneficiary.
+                    <br />
+                    <br />
+                    ▶ Travel outside the official station requires approval with no
+                    additional benefits.
+                    <br />
+                    <br />
+                    ▶ DSWD is not liable for any health or medical concerns; the
+                    beneficiary is responsible for health insurance.
+                    <br />
+                    <br />
+                    ▶ Health-related concerns must be disclosed in the CFW Profile
+                    Form.
+                    <br />
+                    <br />
+                  </span>
 
-            {/* It displays essential details about an individual, including their name, photo, role, contact info, and other related information.</CardDescription> */}
-          </CardDescription>
-        </CardHeader>
-        {/* <pre>{"Has pic: " + displayPic}</pre> */}
-        {/* <pre>{"Token: " + _session.token}</pre> */}
-        {/* <pre><h1>Family Composition</h1>{JSON.stringify(data.person_profile_family_composition, null, 2)}</pre> */}
-        {/* <pre><h1>Person Profile</h1>{JSON.stringify(formData.id, null, 2)}</pre> */}
-        {/* <pre><h1>Sectors</h1>{JSON.stringify(formSectorData, null, 2)}</pre> */}
-        {/* <pre><h1>Disabilities</h1>{JSON.stringify(formDisabilitiesData, null, 2)}</pre> */}
-        {/* <pre><h1>Family Composition</h1>{JSON.stringify(formFamilyCompositionData, null, 2)}</pre> */}
-        {/* <pre><h1>CFW Program Details</h1>{JSON.stringify(formCFWFamDetailsData, null, 2)}</pre> */}
-        {/* <pre><h1>Attachments</h1>{JSON.stringify(formAttachmentsData, null, 2)}</pre>
+                  <span className="font-bold">Release of Financial Assistance</span>
+                  <br />
+                  <br />
+
+                  <span>
+                    ▶ Financial assistance is based on the regional daily wage for
+                    non-agricultural workers as per DOLE-NWPC.
+                    <br />
+                    <br />
+                    ▶ Financial assistance is computed based on DTR and supported by
+                    the Accomplishment Report.
+                    <br />
+                    <br />
+                    ▶ Sign documentary requirements consistently with the valid ID
+                    submitted during engagement.
+                    <br />
+                    <br />
+                    ▶ Submit DTR and AR on time for processing financial assistance.
+                    <br />
+                    <br />
+                    ▶ Comply with corrections flagged by the DSWD KALAHI-CIDSS team
+                    for documentary requirements.
+                    <br />
+                    <br />
+                    ▶ Submit a photocopy of a valid government-issued ID for
+                    verification purposes.
+                    <br />
+                    <br />
+                    ▶ In case of delayed financial assistance release, the
+                    beneficiary may suspend or continue deployment.
+                    <br />
+                    <br />
+                    ▶ Certificate of Completion/Participation is based on attendance
+                    and job performance assessment.
+                    <br />
+                    <br />
+                    ▶ Submit the KALAHI-CIDSS CFWP Evaluation Form for program
+                    enhancement.
+                    <br />
+                    <br />
+                  </span>
+
+                  <span className="font-bold">Other Conditions</span>
+                  <br />
+                  <br />
+
+                  <span>
+                    ▶ No employee-employer relationship is established; only agreed
+                    financial assistance applies.
+                    <br />
+                    <br />
+                    ▶ Documents are primarily signed by the immediate supervisor; an
+                    alternate supervisor may sign if unavailable.
+                    <br />
+                    <br />
+                    ▶ Address grievances through proper DSWD KALAHI-CIDSS channels.
+                    <br />
+                    <br />
+                    ▶ Maintain confidentiality of records, documents, and sensitive
+                    information.
+                    <br />
+                    <br />
+                    ▶ Use appropriate channels, not social media, for raising issues
+                    and concerns.
+                    <br />
+                    <br />
+                    ▶ Maintain confidentiality of non-public information during and
+                    after the program.
+                    <br />
+                    <br />
+                  </span>
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter className="p-4">
+                <Button
+                  onClick={() => {
+                    confirmSave();
+                    setDataPrivacyOpen(false);
+                  }}
+                >
+                  CONFIRM SUBMISSION
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="mb-2 flex flex-col md:flex-row items-center md:justify-between text-center md:text-left">
+                {/* Logo Section */}
+                <div className="flex-shrink-0">
+                  <img
+                    src="/images/logos.png"
+                    alt="DSWD KC BAGONG PILIPINAS"
+                    className="h-12 w-auto"
+                  />
+                </div>
+
+                {/* Title Section */}
+                <div className="text-lg font-semibold mt-2 md:mt-0">
+
+                  {selectedRoleNew?.role_description} Profile Form{" "}
+                  {/* Beneficiary  */}
+                  <span className="text-blue-800">
+                    {" "}
+                    [ {userIdViewing ? "Reviewing" : "Registration"} ]
+                  </span>
+                </div>
+              </CardTitle>
+
+              <CardDescription>
+                <div
+                  className={`p-3 bg-gray-100 border border-gray-300 rounded-lg shadow-sm ${userIdViewing ? "hidden" : ""
+                    } `}
+                >
+                  <h2 className="text-xl font-semibold text-gray-800 mb-2">
+                    Important Instructions
+                  </h2>
+                  {/* <Button onClick={handleUpload} >Upload</Button> */}
+                  <p className="text-gray-700 mb-4">
+                    Please read and understand the following before proceeding:
+                  </p>
+                  <ul className="list-disc list-inside text-gray-600 mb-4">
+                    <li>
+                      By submitting this form, you agree to the collection, use, and
+                      processing of your personal data in accordance with our{" "}
+                      <span className="text-indigo-600 underline cursor-pointer">
+                        Data Privacy Statement
+                      </span>
+                      .
+                    </li>
+                    <li className={` ${selectedRoleNew?.id == "37544f59-f3ba-45df-ae0b-c8fa4e4ce446" ? "" : "hidden"}   `}>
+                      Submitting this form does{" "}
+                      <span className="font-bold">not guarantee</span> acceptance
+                      into any program or service. All submissions are subject to
+                      review and approval.
+                    </li>
+                    <li>
+                      Ensure that all fields are accurately completed. Incomplete or
+                      incorrect information may result in disqualification.
+                    </li>
+                    <li>
+                      Utilize special characters, such as ñ and Ñ, where
+                      appropriate.
+                    </li>
+                  </ul>
+                </div>
+
+                {/* It displays essential details about an individual, including their name, photo, role, contact info, and other related information.</CardDescription> */}
+              </CardDescription>
+            </CardHeader>
+            {/* <pre>{"Has pic: " + displayPic}</pre> */}
+            {/* <pre>{"Token: " + _session.token}</pre> */}
+            {/* <pre><h1>Family Composition</h1>{JSON.stringify(data.person_profile_family_composition, null, 2)}</pre> */}
+            {/* <pre><h1>Person Profile</h1>{JSON.stringify(formData.id, null, 2)}</pre> */}
+            {/* <pre><h1>Sectors</h1>{JSON.stringify(formSectorData, null, 2)}</pre> */}
+            {/* <pre><h1>Disabilities</h1>{JSON.stringify(formDisabilitiesData, null, 2)}</pre> */}
+            {/* <pre><h1>Family Composition</h1>{JSON.stringify(formFamilyCompositionData, null, 2)}</pre> */}
+            {/* <pre><h1>CFW Program Details</h1>{JSON.stringify(formCFWFamDetailsData, null, 2)}</pre> */}
+            {/* <pre><h1>Attachments</h1>{JSON.stringify(formAttachmentsData, null, 2)}</pre>
         <pre>Profile picture ID: {hasProfilePicture} Display Pic: {displayPic}</pre>
         <pre>Session ID: {_session.id}</pre>
         <pre>Email: {_session.userData.email}</pre> */}
-        {/* <pre>Session: {JSON.stringify(_session)}</pre> */}
-        {/* <pre>Form Sector: {formSectorData.length}</pre> */}
-        {/* <pre>Form Sector: {JSON.stringify(formSectorData)}</pre> */}
-        <CardContent>
-          <div className="grid sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-1 gap-3">
-            <div className="flex flex-col sm:flex-row items-center sm:items-start w-full">
-              <div
-                className={`grid sm:grid-cols-4 sm:grid-rows-1 w-full ${
-                  Number(formData.modality_id) === 25
-                    ? "bg-cfw_bg_color text-black"
-                    : ""
-                } p-3 bg-black text-white mt-3`}
-              >
-                <span className="flex items-center gap-1">
-                  General Information
-                  {/* <CheckCircle className="h-6 w-6 text-white-500 " /> */}
-                </span>
-              </div>
-            </div>
-            {/* Card Container */}
-            {/* <div className="flex flex-col gap-4 sm:flex-row items-center sm:items-start w-full justify-between"> */}
-            <div
-              id="general_info_form"
-              className="grid grid-cols-1 py-4 sm:grid-cols-4 gtabs4:grid-cols-1 md:grid-cols-1 2xl:grid-cols-4 w-full"
-            >
-              {/* Image on top (Mobile) / Left (Desktop) */}
-              {/* <div className="flex-shrink-0 md:h-full lg:h-full"> */}
-              <div className="col-span-1 p-4 flex items-center justify-center">
-                <Avatar
-                  className="h-[300px] w-[300px] cursor-pointer"
-                  onClick={handleAvatarClick}
-                  id="profile_picture"
-                >
-                  {displayPic ? (
-                    <AvatarImage src={displayPic} alt="Display Picture" />
-                  ) : (
-                    <AvatarFallback className="bg-white border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-500 font-bold rounded-full w-full h-full">
-                      KC
-                    </AvatarFallback>
-                  )}
-                </Avatar>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  className="mt-2 hidden"
-                />
-              </div>
-
-              <div className="col-span-3 flex flex-col gap-4 mt-2">
-                {/* Inputs below image (Mobile) / Right (Desktop) */}
-                <div className="grid  sm:grid-cols-1 gtabs4:grid-cols-2 md:grid-cols-2 lg:grid-cols-2  gap-4 w-full">
-                  <div className="sm:py-1 md:p-1">
-                    {/* <GeneratePDF  /> */}
-
-                    <Label
-                      htmlFor="modality_id"
-                      className="block text-md font-medium mb-1"
-                    >
-                      Select Modality<span className="text-red-500"> *</span>{" "}
-                    </Label>
-                    <FormDropDown
-                      id="modality_id"
-                      options={modalityOptions}
-                      selectedOption={formData.modality_id || 25}
-                      onChange={handlModalityChange}
-
-                      // onChange={(e) => updatingCommonData("modality_id", e.target.id)}
-                    />
-                    {errors?.modality_id && (
-                      <p className="mt-2 text-md  text-red-500">
-                        {errors.modality_id}
-                      </p>
-                    )}
-                  </div>
-                  <div className="sm:py-1 md:p-1 hidden">
-                    {/* <GeneratePDF  /> */}
-
-                    <Label
-                      htmlFor="role_id"
-                      className="block text-md font-medium mb-1"
-                    >
-                      Select Role<span className="text-red-500"> *</span>{" "}
-                    </Label>
-                    <FormDropDown
-                      id="role_id"
-                      name="role_id"
-                      options={modalityOptions}
-                      selectedOption={formData.modality_id || 25}
-                      onChange={handlModalityChange}
-
-                      // onChange={(e) => updatingCommonData("modality_id", e.target.id)}
-                    />
-                    {errors?.modality_id && (
-                      <p className="mt-2 text-md  text-red-500">
-                        {errors.modality_id}
-                      </p>
-                    )}
-                  </div>
+            {/* <pre>Session: {JSON.stringify(_session)}</pre> */}
+            {/* <pre>Form Sector: {formSectorData.length}</pre> */}
+            {/* <pre>Form Sector: {JSON.stringify(formSectorData)}</pre> */}
+            <CardContent>
+              <div className="grid sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-1 gap-3">
+                <div className="flex flex-col sm:flex-row items-center sm:items-start w-full">
                   <div
-                    className={`sm:py-1 md:p-1  ${
-                      formData.modality_id !== undefined &&
-                      formData.modality_id === 25
-                        ? ""
-                        : "hidden"
-                    }`}
+                    className={`grid sm:grid-cols-4 sm:grid-rows-1 w-full ${Number(formData.modality_id) === 25
+                      ? "bg-cfw_bg_color text-black"
+                      : ""
+                      } p-3 bg-black text-white mt-3`}
                   >
-                    <Label
-                      htmlFor="modality_sub_category_id"
-                      className="block text-md  font-medium mb-1"
-                    >
-                      CFW Category<span className="text-red-500"> *</span>
-                    </Label>
-                    <FormDropDown
-                      id="modality_sub_category_id"
-                      options={modalitySubCategoryOptions}
-                      selectedOption={formData.modality_sub_category_id || 1}
-                      onChange={handlModalitySubCategoryChange}
-                      readOnly
-                    />
-                    {errors?.modality_id && (
-                      <p className="mt-2 text-md  text-red-500">
-                        {errors.modality_id}
-                      </p>
-                    )}
+                    <span className="flex items-center gap-1">
+                      General Information
+                      {/* <CheckCircle className="h-6 w-6 text-white-500 " /> */}
+                    </span>
                   </div>
                 </div>
+                {/* Card Container */}
+                {/* <div className="flex flex-col gap-4 sm:flex-row items-center sm:items-start w-full justify-between"> */}
+                <div
+                  id="general_info_form"
+                  className="grid grid-cols-1 py-4 sm:grid-cols-4 gtabs4:grid-cols-1 md:grid-cols-1 2xl:grid-cols-4 w-full"
+                >
+                  {/* Image on top (Mobile) / Left (Desktop) */}
+                  {/* <div className="flex-shrink-0 md:h-full lg:h-full"> */}
+                  <div className="col-span-1 p-4 flex items-center justify-center">
+                    <Avatar
+                      className="h-[300px] w-[300px] cursor-pointer"
+                      onClick={handleAvatarClick}
+                      id="profile_picture"
+                    >
+                      {displayPic ? (
+                        <AvatarImage src={displayPic} alt="Display Picture" />
+                      ) : (
+                        <AvatarFallback className="bg-white border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-500 font-bold rounded-full w-full h-full">
+                          KC
+                        </AvatarFallback>
+                      )}
+                    </Avatar>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="mt-2 hidden"
+                    />
+                  </div>
 
-                {/* <div className="grid sm:grid-cols-1 lg:grid-cols-3 gap-4 w-full"> */}
-                <div className=" grid sm:grid-cols-1 lg:grid-cols-3 gap-4 ipadmini:grid-cols-3 gtabs4:grid-cols-3  2xl:grid-cols-4 w-full ">
-                  {/* <div className="sm:py-1 md:p-1 hidden">
+                  <div className="col-span-3 flex flex-col gap-4 mt-2">
+                    {/* Inputs below image (Mobile) / Right (Desktop) */}
+                    <div className="grid  sm:grid-cols-1 gtabs4:grid-cols-2 md:grid-cols-2 lg:grid-cols-2  gap-4 w-full">
+                      <div className="sm:py-1 md:p-1">
+                        {/* <GeneratePDF  /> */}
+
+                        <Label
+                          htmlFor="modality_id"
+                          className="block text-md font-medium mb-1"
+                        >
+                          Modality<span className="text-red-500"> *</span>{" "}
+                        </Label>
+                        <FormDropDown
+                          id="modality_id"
+                          options={modalityOptions}
+                          selectedOption={formData.modality_id || 25}
+                          onChange={handlModalityChange}
+
+                        // onChange={(e) => updatingCommonData("modality_id", e.target.id)}
+                        />
+                        {errors?.modality_id && (
+                          <p className="mt-2 text-md  text-red-500">
+                            {errors.modality_id}
+                          </p>
+                        )}
+                      </div>
+                      <div className="sm:py-1 md:p-1 hidden">
+                        {/* <GeneratePDF  /> */}
+
+                        <Label
+                          htmlFor="role_id"
+                          className="block text-md font-medium mb-1"
+                        >
+                          Select Role<span className="text-red-500"> *</span>{" "}
+                        </Label>
+                        <FormDropDown
+                          id="role_id"
+                          name="role_id"
+                          options={modalityOptions}
+                          selectedOption={formData.modality_id || 25}
+                          onChange={handlModalityChange}
+
+                        // onChange={(e) => updatingCommonData("modality_id", e.target.id)}
+                        />
+                        {errors?.modality_id && (
+                          <p className="mt-2 text-md  text-red-500">
+                            {errors.modality_id}
+                          </p>
+                        )}
+                      </div>
+                      <div
+                        className={`sm:py-1 md:p-1  ${formData.modality_id !== undefined &&
+                          formData.modality_id === 25 && selectedRoleNew?.id == "37544f59-f3ba-45df-ae0b-c8fa4e4ce446"
+                          ? ""
+                          : "hidden"
+                          }`}
+                      >
+                        <Label
+                          htmlFor="modality_sub_category_id"
+                          className="block text-md  font-medium mb-1"
+                        >
+                          CFW Category<span className="text-red-500"> *</span>
+                        </Label>
+                        <FormDropDown
+                          id="modality_sub_category_id"
+                          options={modalitySubCategoryOptions}
+                          selectedOption={formData.modality_sub_category_id || 1}
+                          onChange={handlModalitySubCategoryChange}
+                          readOnly
+                        />
+                        {errors?.modality_id && (
+                          <p className="mt-2 text-md  text-red-500">
+                            {errors.modality_id}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* <div className="grid sm:grid-cols-1 lg:grid-cols-3 gap-4 w-full"> */}
+                    <div className=" grid sm:grid-cols-1 lg:grid-cols-3 gap-4 ipadmini:grid-cols-3 gtabs4:grid-cols-3  2xl:grid-cols-4 w-full ">
+                      {/* <div className="sm:py-1 md:p-1 hidden">
                     <GeneratePDF />
                   </div> */}
 
-                  <div className="sm:py-1 md:p-1">
-                    <Label
-                      htmlFor="first_name"
-                      className="block text-md  font-medium mb-1"
-                    >
-                      First Name<span className="text-red-500"> *</span>
-                    </Label>
-                    <Input
-                      value={formData.first_name || ""}
-                      onChange={(e) =>
-                        updateFormData({ first_name: e.target.value })
-                      }
-                      id="first_name"
-                      name="first_name"
-                      type="text"
-                      placeholder="Enter your First Name"
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                    />
-                    {errors?.first_name && (
-                      <p className="mt-2 text-md  text-red-500">
-                        {errors.first_name}
-                      </p>
-                    )}
-                  </div>
-                  <div className="sm:py-1 md:p-1">
-                    <div className="flex items-center space-x-1">
-                      <Input
-                        type="checkbox"
-                        className="w-4 h-4 cursor-pointer"
-                        id="middle_name_toggle"
-                        checked={isMiddleNameEnabled}
-                        // checked={formData?.has_middle_name ?? false}
-                        onChange={(e) =>
-                          chkIsMiddleNameEnabled(e.target.checked)
-                        }
-                      />
-                      <Label
-                        htmlFor="middle_name"
-                        className="block text-md  font-medium"
-                      >
-                        With Middle Name
-                      </Label>
-                    </div>
-                    <Input
-                      ref={middleNameRef}
-                      // onBlur={handleBlur}
-                      // onChange={(e) => updateCommonData('middle_name', e.target.value)}
-                      value={
-                        isMiddleNameEnabled ? formData.middle_name || "" : ""
-                      }
-                      onChange={(e) =>
-                        updateFormData({ middle_name: e.target.value })
-                      }
-                      // onChange={(e) => updateCapturedData("common_data", 'middle_name', e.target.value)}
-                      id="middle_name"
-                      name="middle_name"
-                      type="text"
-                      placeholder={
-                        isMiddleNameEnabled
-                          ? "Enter your Middle Name"
-                          : "No Middle Name"
-                      } //  "No Middle Name"
-                      // className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                      className={`${
-                        !isMiddleNameEnabled
-                          ? "bg-gray-200 cursor-not-allowed"
-                          : ""
-                      } mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500`}
-                    />
-                  </div>
-                  <div className="sm:py-1 md:p-1">
-                    <Label
-                      htmlFor="last_name"
-                      className="block text-md  font-medium mb-1"
-                    >
-                      Last Name<span className="text-red-500"> *</span>
-                    </Label>
-                    <Input
-                      value={formData.last_name || ""}
-                      onChange={(e) =>
-                        updateFormData({ last_name: e.target.value })
-                      }
-                      id="last_name"
-                      name="last_name"
-                      type="text"
-                      placeholder="Enter your Last Name"
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                    />
-                    {errors?.last_name && (
-                      <p className="mt-2 text-md  text-red-500">
-                        {errors.last_name}
-                      </p>
-                    )}
-                  </div>
-                  <div className="sm:py-1 md:p-1">
-                    <Label
-                      htmlFor="extension_name"
-                      className="block text-md  font-medium mb-1 mb-1"
-                    >
-                      Extension Name
-                    </Label>
-                    <FormDropDown
-                      id="extension_name"
-                      options={extensionNameOptions}
-                      selectedOption={formData.extension_name_id || ""}
-                      onChange={handlExtensionNameChange}
-                    />
-                  </div>
-                  <div className="sm:py-1 md:p-1">
-                    <Label
-                      htmlFor="sex_id"
-                      className="block text-md  font-medium mb-1"
-                    >
-                      Sex<span className="text-red-500"> *</span>
-                    </Label>
-                    <FormDropDown
-                      id="sex_id"
-                      options={sexOptions}
-                      selectedOption={formData.sex_id || ""}
-                      // selectedOption={selectedSexId}
-                      onChange={handleSexChange}
-                    />
-                    {errors?.sex_id && (
-                      <p className="mt-2 text-md  text-red-500">
-                        {errors.sex_id}
-                      </p>
-                    )}
-                  </div>
-                  <div className="sm:py-1 md:p-1">
-                    <Label
-                      htmlFor="civil_status_id"
-                      className="block text-md  font-medium mb-1"
-                    >
-                      Civil Status<span className="text-red-500"> *</span>
-                    </Label>
-                    <FormDropDown
-                      id="civil_status_id"
-                      options={civilStatusOptions}
-                      // selectedOption={commonData.civil_status_id || ""}
-                      selectedOption={formData.civil_status_id || 4 || ""}
-                      // selectedOption={selectedCivilStatusId}
-                      onChange={handleCivilStatusChange}
-                    />
-                    {errors?.civil_status_id && (
-                      <p className="mt-2 text-md  text-red-500">
-                        {errors.civil_status_id}
-                      </p>
-                    )}
-                  </div>
-                  <div className="sm:py-1 md:p-1">
-                    <Label
-                      htmlFor="birthdate"
-                      className="block text-md  font-medium mb-1"
-                    >
-                      Birth Date<span className="text-red-500"> *</span>
-                    </Label>
-                    <Input
-                      //  onChange={(e) => updateCommonData('first_name', e.target.value)}
-                      id="birthdate"
-                      name="birthdate"
-                      type="date"
-                      placeholder="MM/DD/YYYY"
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                      value={formData.birthdate || ""}
-                      onChange={handleDOBChange}
-                    />
-                    {errors?.birthdate && (
-                      <p className="mt-2 text-md  text-red-500">
-                        {errors.birthdate}
-                      </p>
-                    )}
-                  </div>
-                  <div className="sm:py-1 md:p-1">
-                    <Label
-                      htmlFor="age"
-                      className="block text-md  font-medium mb-1"
-                    >
-                      Age<span className="text-red-500"> *</span>
-                    </Label>
-                    <Input
-                      id="age"
-                      name="age"
-                      type="text"
-                      placeholder="0"
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-center"
-                      value={formData.age || 0}
-                      // value={age.toString()}
-                      // onChange={(e) => updateCommonData('age', age.toString())}
-                      readOnly
-                    />
-                  </div>
-                  <div className="sm:py-1 md:p-1">
-                    <div className="flex items-center space-x-1">
-                      <Input
-                        type="checkbox"
-                        className="w-4 h-4 cursor-pointer"
-                        id="philsys_id_number_toggle"
-                        checked={hasPhilsysId}
-                        onChange={(e) => chkHasPhilSysId(e.target.checked)}
-                      />
-                      <Label
-                        htmlFor="middle_name"
-                        className="block text-md  font-medium"
-                      >
-                        With PhilSys ID Number
-                      </Label>
-                    </div>
+                      <div className="sm:py-1 md:p-1">
+                        <Label
+                          htmlFor="first_name"
+                          className="block text-md  font-medium mb-1"
+                        >
+                          First Name<span className="text-red-500"> *</span>
+                        </Label>
+                        <Input
+                          value={formData.first_name || ""}
+                          onChange={(e) =>
+                            updateFormData({ first_name: e.target.value })
+                          }
+                          id="first_name"
+                          name="first_name"
+                          type="text"
+                          placeholder="Enter your First Name"
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        />
+                        {errors?.first_name && (
+                          <p className="mt-2 text-md  text-red-500">
+                            {errors.first_name}
+                          </p>
+                        )}
+                      </div>
+                      <div className="sm:py-1 md:p-1">
+                        <div className="flex items-center space-x-1">
+                          <Input
+                            type="checkbox"
+                            className="w-4 h-4 cursor-pointer"
+                            id="middle_name_toggle"
+                            checked={isMiddleNameEnabled}
+                            // checked={formData?.has_middle_name ?? false}
+                            onChange={(e) =>
+                              chkIsMiddleNameEnabled(e.target.checked)
+                            }
+                          />
+                          <Label
+                            htmlFor="middle_name"
+                            className="block text-md  font-medium"
+                          >
+                            With Middle Name
+                          </Label>
+                        </div>
+                        <Input
+                          ref={middleNameRef}
+                          // onBlur={handleBlur}
+                          // onChange={(e) => updateCommonData('middle_name', e.target.value)}
+                          value={
+                            isMiddleNameEnabled ? formData.middle_name || "" : ""
+                          }
+                          onChange={(e) =>
+                            updateFormData({ middle_name: e.target.value })
+                          }
+                          // onChange={(e) => updateCapturedData("common_data", 'middle_name', e.target.value)}
+                          id="middle_name"
+                          name="middle_name"
+                          type="text"
+                          placeholder={
+                            isMiddleNameEnabled
+                              ? "Enter your Middle Name"
+                              : "No Middle Name"
+                          } //  "No Middle Name"
+                          // className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                          className={`${!isMiddleNameEnabled
+                            ? "bg-gray-200 cursor-not-allowed"
+                            : ""
+                            } mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500`}
+                        />
+                      </div>
+                      <div className="sm:py-1 md:p-1">
+                        <Label
+                          htmlFor="last_name"
+                          className="block text-md  font-medium mb-1"
+                        >
+                          Last Name<span className="text-red-500"> *</span>
+                        </Label>
+                        <Input
+                          value={formData.last_name || ""}
+                          onChange={(e) =>
+                            updateFormData({ last_name: e.target.value })
+                          }
+                          id="last_name"
+                          name="last_name"
+                          type="text"
+                          placeholder="Enter your Last Name"
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        />
+                        {errors?.last_name && (
+                          <p className="mt-2 text-md  text-red-500">
+                            {errors.last_name}
+                          </p>
+                        )}
+                      </div>
+                      <div className="sm:py-1 md:p-1">
+                        <Label
+                          htmlFor="extension_name"
+                          className="block text-md  font-medium mb-1 mb-1"
+                        >
+                          Extension Name
+                        </Label>
+                        <FormDropDown
+                          id="extension_name"
+                          options={extensionNameOptions}
+                          selectedOption={formData.extension_name_id || ""}
+                          onChange={handlExtensionNameChange}
+                        />
+                      </div>
+                      <div className="sm:py-1 md:p-1">
+                        <Label
+                          htmlFor="sex_id"
+                          className="block text-md  font-medium mb-1"
+                        >
+                          Sex<span className="text-red-500"> *</span>
+                        </Label>
+                        <FormDropDown
+                          id="sex_id"
+                          options={sexOptions}
+                          selectedOption={formData.sex_id || ""}
+                          // selectedOption={selectedSexId}
+                          onChange={handleSexChange}
+                        />
+                        {errors?.sex_id && (
+                          <p className="mt-2 text-md  text-red-500">
+                            {errors.sex_id}
+                          </p>
+                        )}
+                      </div>
+                      <div className="sm:py-1 md:p-1">
+                        <Label
+                          htmlFor="civil_status_id"
+                          className="block text-md  font-medium mb-1"
+                        >
+                          Civil Status<span className="text-red-500"> *</span>
+                        </Label>
+                        <FormDropDown
+                          id="civil_status_id"
+                          options={civilStatusOptions}
+                          // selectedOption={commonData.civil_status_id || ""}
+                          selectedOption={formData.civil_status_id || 4 || ""}
+                          // selectedOption={selectedCivilStatusId}
+                          onChange={handleCivilStatusChange}
+                        />
+                        {errors?.civil_status_id && (
+                          <p className="mt-2 text-md  text-red-500">
+                            {errors.civil_status_id}
+                          </p>
+                        )}
+                      </div>
+                      <div className="sm:py-1 md:p-1">
+                        <Label
+                          htmlFor="birthdate"
+                          className="block text-md  font-medium mb-1"
+                        >
+                          Birth Date<span className="text-red-500"> *</span>
+                        </Label>
+                        <Input
+                          //  onChange={(e) => updateCommonData('first_name', e.target.value)}
+                          id="birthdate"
+                          name="birthdate"
+                          type="date"
+                          placeholder="MM/DD/YYYY"
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                          value={formData.birthdate || ""}
+                          onChange={handleDOBChange}
+                        />
+                        {errors?.birthdate && (
+                          <p className="mt-2 text-md  text-red-500">
+                            {errors.birthdate}
+                          </p>
+                        )}
+                      </div>
+                      <div className="sm:py-1 md:p-1">
+                        <Label
+                          htmlFor="age"
+                          className="block text-md  font-medium mb-1"
+                        >
+                          Age<span className="text-red-500"> *</span>
+                        </Label>
+                        <Input
+                          id="age"
+                          name="age"
+                          type="text"
+                          placeholder="0"
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-center"
+                          value={formData.age || 0}
+                          // value={age.toString()}
+                          // onChange={(e) => updateCommonData('age', age.toString())}
+                          readOnly
+                        />
+                      </div>
+                      <div className="sm:py-1 md:p-1">
+                        <div className="flex items-center space-x-1">
+                          <Input
+                            type="checkbox"
+                            className="w-4 h-4 cursor-pointer"
+                            id="philsys_id_number_toggle"
+                            checked={hasPhilsysId}
+                            onChange={(e) => chkHasPhilSysId(e.target.checked)}
+                          />
+                          <Label
+                            htmlFor="middle_name"
+                            className="block text-md  font-medium"
+                          >
+                            With PhilSys ID Number
+                          </Label>
+                        </div>
 
-                    <Input
-                      ref={philSysIDRef}
-                      type="text"
-                      id="philsys_id_no"
-                      name="philsys_id_no"
-                      placeholder="0000-0000000-000"
-                      maxLength={19} // 4 + 7 + 1 digits + 2 hyphens
-                      // className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                      className={`${
-                        !hasPhilsysId ? "bg-gray-200 cursor-not-allowed" : ""
-                      } mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500`}
-                      disabled={!hasPhilsysId}
-                      value={formData.philsys_id_no || ""}
-                      onChange={(e) => {
-                        let value = e.target.value.replace(/\D/g, ""); // Remove non-numeric characters
-                        if (value.length > 4)
-                          value = value.slice(0, 4) + "-" + value.slice(4);
-                        if (value.length > 9)
-                          value = value.slice(0, 9) + "-" + value.slice(9);
-                        if (value.length > 14)
-                          value = value.slice(0, 14) + "-" + value.slice(14);
-                        if (value.length > 19)
-                          value = value.slice(0, 19) + "-" + value.slice(19);
-                        updateFormData({ philsys_id_no: value.slice(0, 19) }); // Limit to 16 characters
-                      }}
-                    />
-                    {/* <PhilSysInput                        
+                        <Input
+                          ref={philSysIDRef}
+                          type="text"
+                          id="philsys_id_no"
+                          name="philsys_id_no"
+                          placeholder="0000-0000000-000"
+                          maxLength={19} // 4 + 7 + 1 digits + 2 hyphens
+                          // className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                          className={`${!hasPhilsysId ? "bg-gray-200 cursor-not-allowed" : ""
+                            } mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500`}
+                          disabled={!hasPhilsysId}
+                          value={formData.philsys_id_no || ""}
+                          onChange={(e) => {
+                            let value = e.target.value.replace(/\D/g, ""); // Remove non-numeric characters
+                            if (value.length > 4)
+                              value = value.slice(0, 4) + "-" + value.slice(4);
+                            if (value.length > 9)
+                              value = value.slice(0, 9) + "-" + value.slice(9);
+                            if (value.length > 14)
+                              value = value.slice(0, 14) + "-" + value.slice(14);
+                            if (value.length > 19)
+                              value = value.slice(0, 19) + "-" + value.slice(19);
+                            updateFormData({ philsys_id_no: value.slice(0, 19) }); // Limit to 16 characters
+                          }}
+                        />
+                        {/* <PhilSysInput                        
                         /> */}
-                    {/* may id na sa component */}
-                    {errors?.philsys_id_no && (
-                      <p className="mt-2 text-md  text-red-500">
-                        {errors.philsys_id_no}
-                      </p>
-                    )}
-                  </div>
-                  {/* <div className="col-span-3 sm:py-1 md:p-1"> */}
-                  <div className="sm:py-1 md:p-1  gtabs4:col-span-3 2xl:col-span-3">
-                    <Label
-                      htmlFor="birthplace"
-                      className="block text-md  font-medium mb-1"
-                    >
-                      Birthplace <span className="text-red-500"> *</span>
-                    </Label>
-                    <Textarea
-                      value={formData.birthplace || ""}
-                      onChange={(e) =>
-                        updateFormData({ birthplace: e.target.value })
-                      }
-                      id="birthplace"
-                      name="birthplace"
-                      placeholder="Enter your Birthplace (Region, Province, Municipality, Barangay and Street #/ Sitio"
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                    />
-                    {errors?.birthplace && (
-                      <p className="mt-2 text-md  text-red-500">
-                        {errors.birthplace}
-                      </p>
-                    )}
+                        {/* may id na sa component */}
+                        {errors?.philsys_id_no && (
+                          <p className="mt-2 text-md  text-red-500">
+                            {errors.philsys_id_no}
+                          </p>
+                        )}
+                      </div>
+                      {/* <div className="col-span-3 sm:py-1 md:p-1"> */}
+                      <div className="sm:py-1 md:p-1  gtabs4:col-span-3 2xl:col-span-3">
+                        <Label
+                          htmlFor="birthplace"
+                          className="block text-md  font-medium mb-1"
+                        >
+                          Birthplace <span className="text-red-500"> *</span>
+                        </Label>
+                        <Textarea
+                          value={formData.birthplace || ""}
+                          onChange={(e) =>
+                            updateFormData({ birthplace: e.target.value })
+                          }
+                          id="birthplace"
+                          name="birthplace"
+                          placeholder="Enter your Birthplace (Region, Province, Municipality, Barangay and Street #/ Sitio"
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        />
+                        {errors?.birthplace && (
+                          <p className="mt-2 text-md  text-red-500">
+                            {errors.birthplace}
+                          </p>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
 
-          <div className="grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {/* inputs */}
-          </div>
+              <div className="grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {/* inputs */}
+              </div>
 
-          <div className="p-3 col-span-full">
-            <FormTabs
-              tabs={tabs}
-              activeTab={activeTab}
-              onTabChange={setActiveTab}
-              className={formData.modality_id !== undefined ? "" : "hidden"}
-            />
-          </div>
-        </CardContent>
-        <CardFooter className="mt-10 pt-5 sticky bottom-0 bg-white shadow-md z-50">
-          <div className="flex flex-col space-y-4">
-            {/* Checkbox Section */}
-            {/* <div className='px-3'>
+              <div className="p-3 col-span-full">
+                <FormTabs
+                  tabs={tabs}
+                  activeTab={activeTab}
+                  onTabChange={setActiveTab}
+                  className={formData.modality_id !== undefined ? "" : "hidden"}
+                />
+              </div>
+            </CardContent>
+            <CardFooter className="mt-10 pt-5 sticky bottom-0 bg-white shadow-md z-50">
+              <div className="flex flex-col space-y-4">
+                {/* Checkbox Section */}
+                {/* <div className='px-3'>
               <label className="flex items-center space-x-2">
                 <input
                   type="checkbox"
@@ -3668,44 +4193,66 @@ export default function PersonProfileForm({ user_id_viewing }: any) {
               </label>
             </div> */}
 
-            {/* Save Button Section */}
-            <div className="px-3">
-              {/* <Button onClick={handleSubmit} disabled={!isAccepted || loading || btnToggle} > */}
-              {/* <Button onClick={toggleDataPrivacy} disabled={btnToggle} > */}
-              <Button
-                onClick={handleSubmit}
-                disabled={btnToggle}
-                className={`${userIdViewing ? "hidden" : ""}`}
-              >
-                {loading ? (
-                  <Loader2
-                    className={`animate-spin size-5 ${
-                      Number(formData?.modality_id) === 25
-                        ? "bg-cfw_bg_color text-black"
-                        : ""
-                    }`}
-                  />
-                ) : (
-                  ""
-                )}
-                {loading ? "Saving..." : "Save"}
-              </Button>
+                {/* Save Button Section */}
+                <div className="px-3">
+                  {/* <Button onClick={handleSubmit} disabled={!isAccepted || loading || btnToggle} > */}
+                  {/* <Button onClick={toggleDataPrivacy} disabled={btnToggle} > */}
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={btnToggle}
+                    className={`${userIdViewing || selectedRoleNew?.id != "37544f59-f3ba-45df-ae0b-c8fa4e4ce446" ? "hidden" : ""}`}
+                  >
+                    {loading ? (
+                      <Loader2
+                        className={`animate-spin size-5 ${Number(formData?.modality_id) === 25
+                          ? "bg-cfw_bg_color text-black"
+                          : ""
+                          }`}
+                      />
+                    ) : (
+                      ""
+                    )}
+                    {loading ? "Saving..." : "Save"}
+                  </Button>
 
-              <Button
-                className={`${userIdViewing ? "" : "hidden"}`}
-                variant={"default"}
-                onClick={handleUpdateCFWPersonProfile}
-              >
-                Submit
-              </Button>
-            </div>
-          </div>
+                  <Button
+                    className={`${userIdViewing ? "" : "hidden"}`}
+                    variant={"default"}
+                    onClick={handleUpdateCFWPersonProfile}
+                  >
+                    Submit
+                  </Button>
 
-          {/* <ButtonSubmit disabled={loading} label="Submit" onClick={handleSubmit} /> */}
-          {/* <ButtonSubmit disabled={true} label="Submit" /> */}
-        </CardFooter>
-        {/* </form> */}
-      </Card>
+                  {/* save button for non bene */}
+                  <Button
+                    className={`${!userIdViewing &&
+                      selectedRoleNew?.role_description !== "CFW Beneficiary" &&
+                      selectedRoleNew?.role_description !== "Guest"
+                      ? ""
+                      : "hidden"
+                      }`}
+
+                    variant={"default"}
+                    onClick={
+                      handleSubmitNonBeneProfileRegistration}
+                  >
+                    Submit
+                  </Button>
+                </div>
+              </div>
+
+              {/* <ButtonSubmit disabled={loading} label="Submit" onClick={handleSubmit} /> */}
+              {/* <ButtonSubmit disabled={true} label="Submit" /> */}
+            </CardFooter>
+            {/* </form> */}
+          </Card>
+
+        </>
+      ) : null}
     </div>
+
+
+
+
   );
 }

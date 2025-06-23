@@ -9,7 +9,7 @@ type SuccessPageProps = {
   email_subject: string;
   email_body: string;
 };
-import LoginService from "@/app/login/LoginService";
+import LoginService from "@/components/services/LoginService";
 export default function SuccessPage({
   first_name,
   email,
@@ -17,6 +17,7 @@ export default function SuccessPage({
   email_body,
 }: SuccessPageProps) {
   const sendAnEmailConfirmation = () => {
+    
     // Implement actual email logic here
     console.log(`Email sent to ${email}: ${email_subject} - ${email_body}`);
   };
@@ -47,7 +48,7 @@ export default function SuccessPage({
             "subject": "KC IS CFW Module Beneficiary Registration",
             "body": `
                 <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">          
-                  <p>Dear ${first_name.toUpperCase()},</p>
+                  <p>Dear ${first_name},</p>
                   <p>${email_body}</p>        
                   <p>Best regards,</p>
                   <p>KALAHI-CIDSS-CFWP </p>

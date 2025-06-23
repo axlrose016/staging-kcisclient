@@ -1,6 +1,6 @@
 "use client"
-import { LibrariesService } from "@/app/(authorized)/library/LibrariesService";
-import { SettingsService } from "@/app/(authorized)/settings/SettingsService";
+import { LibrariesService } from "@/components/services/LibrariesService";
+import { SettingsService } from "@/components/services/SettingsService";
 import { AppTable } from "@/components/app-table";
 import { PushStatusBadge } from "@/components/general/push-status-badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,16 +9,17 @@ import { toast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-function ListPAPs() {
+function ListModalities() {
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
     const router = useRouter();
     const libService = new LibrariesService();
     const settingsService = new SettingsService();
 
-    async function loadPAPs(){
+    async function loadModalities(){
         try{
-            const data = await libService.getOfflineLibPAP() as any;
+            const data = await libService.getOfflineLibModality() as any;
+            debugger;
             setData(data);
         }catch(error){
             console.error(error);
@@ -27,24 +28,24 @@ function ListPAPs() {
         }
     }
     useEffect(() => {
-        loadPAPs();
+        loadModalities();
     }, []);
 
-    const baseUrl = 'finance/configuration/paps'
+    const baseUrl = 'finance/configuration/modality'
 
     const handleEdit = (row: any) => {
         console.log('Edit:', row);
     };
 
     const handleDelete = async(row: any) => {
-    const success = await settingsService.deleteData(libDb, "lib_pap", row);
+    const success = await settingsService.deleteData(libDb, "lib_modality", row);
         if (success) {
         toast({
             variant: "green",
             title: "Success.",
             description: "Record successfully deleted!",
         })
-        loadPAPs();
+        loadModalities();
     }
     };
 
@@ -65,9 +66,9 @@ function ListPAPs() {
             cell: (value: any) =>  <PushStatusBadge push_status_id={value} size="md" />
         },
         {
-          id: 'pap',
-          header: 'Description',
-          accessorKey: 'pap_description',
+          id: 'modality name',
+          header: 'Modality',
+          accessorKey: 'modality_name',
           filterType: 'text',   
           sortable: true,
           align: "left",
@@ -87,7 +88,7 @@ function ListPAPs() {
 
                 {/* Title Section */}
                 <div className="text-lg font-semibold mt-2 md:mt-0">
-                    Library: PAP
+                    Library: Modality
                 </div>
             </CardTitle>
 
@@ -110,4 +111,4 @@ function ListPAPs() {
     )
 }
 
-export default ListPAPs
+export default ListModalities

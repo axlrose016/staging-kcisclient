@@ -74,11 +74,30 @@ export function CustomRadioGroup({
 
     setResponses(newResponses);
 
-    const formatted = Object.entries(newResponses)
-      .filter(([key]) => key && key !== "0")
-      .map(([key, isActive]) => ({
+    // const formatted = Object.entries(newResponses)
+    //   .filter(([key]) => key && key !== "0")
+    //   .map(([key, isActive]) => ({
+    //     is_deleted: !isActive,
+    //     sector_id: key.toString(),
+    //     id: uuidv4(),
+    //     created_by,
+    //     person_profile_id,
+    //     created_date,
+    //     user_id,
+    //     last_modified_by: null,
+    //     last_modified_date: null,
+    //     push_date: null,
+    //     push_status_id: 2,
+    //     deleted_by: null,
+    //     deleted_date: null,
+    //     remarks: "Person Profile Sector Created",
+    //   }));
+    const formatted = options.map((option) => {
+      const strId = option.id.toString();
+      const isActive = newResponses[strId] ?? false; // default to false if not explicitly set
+      return {
         is_deleted: !isActive,
-        sector_id: key.toString(),
+        sector_id: strId,
         id: uuidv4(),
         created_by,
         person_profile_id,
@@ -91,7 +110,9 @@ export function CustomRadioGroup({
         deleted_by: null,
         deleted_date: null,
         remarks: "Person Profile Sector Created",
-      }));
+      };
+    });
+
 
     localStorage.setItem("person_sectors", JSON.stringify(formatted));
     onChange?.(formatted);
@@ -110,8 +131,8 @@ export function CustomRadioGroup({
               responses?.[option.id.toString()] === undefined
                 ? ""
                 : responses[option.id.toString()]
-                ? "yes"
-                : "no"
+                  ? "yes"
+                  : "no"
             }
             onValueChange={(value) => handleOptionChange(option.id, value)}
           >

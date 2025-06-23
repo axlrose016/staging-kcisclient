@@ -6,6 +6,7 @@ import Assessment from "./assessment";
 import WorkshiftAssignment from "./workshift_assignment";
 import WorkPlan from "./work_plan";
 import PersonProfileForm from "../../form/page";
+// import PersonProfileForm from "../../form/page_";
 import { usePathname } from 'next/navigation';
 function newAbortSignal(timeoutMs: number) {
     const abortController = new AbortController();
@@ -15,15 +16,17 @@ function newAbortSignal(timeoutMs: number) {
 import { getSession } from '@/lib/sessions-client';
 import { SessionPayload } from '@/types/globals';
 import axios from 'axios';
-import LoginService from "@/app/login/LoginService";
+import LoginService from "@/components/services/LoginService";
 import { IPersonProfile, IPersonProfileCfwFamProgramDetails, IPersonProfileFamilyComposition, IPersonProfileSector } from "@/components/interfaces/personprofile";
 
 import { ILibSectors } from "@/components/interfaces/library-interface";
 import { dexieDb } from "@/db/offline/Dexie/databases/dexieDb";
 import { IAttachments } from "@/components/interfaces/general/attachments";
-import SectorDetails from "../../form/sectors";
+import SectorDetails from "../../form/sectors_new";
 import FamilyComposition from "../../form/family_composition";
 import Attachments from "../../form/attachments";
+// import PersonProfileForm from "../../form/page";
+// import PersonProfileForm_ from "../../form/page_";
 export default function person_profile() {
     const [profiles, setProfiles] = useState<IPersonProfile[]>([]);
     const [profilesSector, setProfilesSector] = useState<IPersonProfileSector[]>([]);
@@ -36,6 +39,8 @@ export default function person_profile() {
     const pathname = usePathname(); // e.g. "/personprofile/masterlist/8a892894-9570-43db-8edd-6008761318a2"
     const segments = pathname ? pathname.split('/') : [];
     const id = segments[segments.length - 1];
+
+    
     // const [loading, setLoading] = useState(true);
    
 

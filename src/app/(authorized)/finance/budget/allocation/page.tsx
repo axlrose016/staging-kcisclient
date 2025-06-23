@@ -3,8 +3,8 @@ import { AppTable } from '@/components/app-table'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useRouter } from 'next/navigation';
 import React from 'react'
-import { FinanceService } from '../../FinanceService';
-import { SettingsService } from '@/app/(authorized)/settings/SettingsService';
+import { FinanceService } from '../../../../../components/services/FinanceService';
+import { SettingsService } from '@/components/services/SettingsService';
 import { PushStatusBadge } from '@/components/general/push-status-badge';
 import { financeDb } from '@/db/offline/Dexie/databases/financeDb';
 import { toast } from '@/hooks/use-toast';
@@ -87,9 +87,18 @@ function AllocationMasterlist() {
           cell: null,
       },
       {
-          id: 'pap descriotion',
-          header: 'PAP',
-          accessorKey: 'pap_description',
+          id: 'fund source name',
+          header: 'Fund Source',
+          accessorKey: 'fund_source_name',
+          filterType: 'text',
+          sortable: true,
+          align: "left",
+          cell: null,
+      },
+      {
+          id: 'modality name',
+          header: 'Modality',
+          accessorKey: 'modality_name',
           filterType: 'text',
           sortable: true,
           align: "left",
@@ -135,7 +144,7 @@ function AllocationMasterlist() {
           id: 'allocation amount',
           header: 'Amount',
           accessorKey: 'allocation_amount',
-          filterType: 'number',
+          filterType: null,
           sortable: true,
           align: "right",
           cell: null,

@@ -47,11 +47,12 @@ type Beneficiary = {
   status_name: string
   // is_selected: string
 }
-import LoginService from "@/app/login/LoginService";
+import LoginService from "@/components/services/LoginService";
 import { SessionPayload } from '@/types/globals';
 import { getSession } from '@/lib/sessions-client'
 const _session = await getSession() as SessionPayload;
-export default function CreateWorkPlanPage() {
+
+export default function WorkPlanPage() {
 
   const [personProfileId, setPersonProfileId] = useState<string>("")
   const [deploymentAreaId, setDeploymentAreaId] = useState(0)
@@ -76,7 +77,7 @@ export default function CreateWorkPlanPage() {
 
   useEffect(() => {
 
-    // Fetch task management data from local storage or server if needed
+ 
     const lsWorkPlanData = localStorage.getItem("work_plan")
     if (lsWorkPlanData) {
       const parsedTM = JSON.parse(lsWorkPlanData) as WorkPlanProps
@@ -141,32 +142,10 @@ export default function CreateWorkPlanPage() {
 
         const deploymentAreaId = personData.cfw_assessment[0].deployment_area_id;
         const deploymentAreaCategoryId = personData.cfw_assessment[0].deployment_area_category_id;
-        debugger
-        const eligibleBenesResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL_KCIS}cfw_assessment/view/cfw_assessment_by_deployment_category/`,
-          {
-            // const response = await fetch(endpoint, {
-            method: "POST",
-            headers: {
-              Authorization: `bearer ${onlinePayload.token}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              "deployment_area_category_id": deploymentAreaCategoryId,
-              "deployment_area_id": deploymentAreaId
-            })
-          });
-
-        if (!eligibleBenesResponse.ok) {
-          const data = await eligibleBenesResponse.json();
-          console.log("Error fetching data:", data);
-        } else {
-          const data = await eligibleBenesResponse.json();
-          console.log("👨‍👩‍👧‍👦Eligible Beneficiaries  from api ", data);
-
-
-          setBeneficiariesData(data); //these are the eligible beneficiaries
-        }
+        localStorage.setItem("work_plan_deployment_area_id", deploymentAreaId)
+        // alert(deploymentAreaId)
+        localStorage.setItem("work_plan_deployment_area_category_id", deploymentAreaCategoryId)
+         
 
       } catch (error: any) {
         if (error.name === "AbortError") {
@@ -183,15 +162,7 @@ export default function CreateWorkPlanPage() {
 
 
   }, []);
-
-
-
-  // const handleInputChangeTaskManagement = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-  //   const { name, value } = e.target;
-  //   const updated = { ...workPlanData, [name]: value };
-  //   setWorkPlanData(updated);
-  //   localStorage.setItem("work_plan", JSON.stringify(updated));
-  // }
+ 
   const { toast } = useToast()
 
 
@@ -210,82 +181,7 @@ export default function CreateWorkPlanPage() {
     timeline_to: "",
     assigned_person_id: "",
   })
-
-  // State to track which task is being edited
-  const [editingTaskId, setEditingTaskId] = useState<string | null>(null)
-
-  // Function to handle saving a new task
-  // const handleSaveTask = () => {
-  //   if (!newTask.category_id || !newTask.activities_tasks) {
-  //     return // Basic validation
-  //   }
-
-  //   const taskId = Date.now().toString()
-  //   const taskToSave = { ...newTask, id: taskId }
-  //   // const { toast } = useToast()
-  //   // debugger;
-  //   const isTaskExist = tasks.some((task) => task.activities_tasks.toLowerCase().trim() === newTask.activities_tasks.toLowerCase().trim() && task.category_id.toLowerCase().trim() === newTask.category_id.toLowerCase().trim())
-  //   if (isTaskExist) {
-  //     toast({
-  //       variant: "destructive",
-  //       description: "Task with the same type and name already exists!"
-
-  //     })
-
-  //     return;
-  //   }
-  //   setTasks([...tasks, taskToSave])
-  //   localStorage.setItem("workPlan", JSON.stringify([...tasks, taskToSave]))
-  //   // Reset the form
-  //   setNewTask({
-  //     id: "",
-  //     work_plan_id: "",
-  //     category_id: "",
-  //     activities_tasks: "",
-  //     expected_output: "",
-  //     timeline_from: "",
-  //     timeline_to: "",
-  //     assigned_person_id: "",
-  //   })
-  // }
-
-  // // Function to handle editing a task
-  // const handleEditTask = (taskId: string) => {
-  //   setEditingTaskId(taskId)
-  //   const taskToEdit = tasks.find((task) => task.id === taskId)
-  //   if (taskToEdit) {
-  //     setNewTask(taskToEdit)
-  //   }
-  // }
-
-  // // Function to handle updating a task
-  // const handleUpdateTask = () => {
-  //   const updatedTasks = tasks.map((task) => (task.id === editingTaskId ? newTask : task))
-  //   setTasks(updatedTasks)
-  //   localStorage.setItem("work_plan_tasks", JSON.stringify(updatedTasks))
-  //   // Reset the form and editing state
-  //   setNewTask({
-  //     id: "",
-  //     work_plan_id: "",
-  //     category_id: "",
-  //     activities_tasks: "",
-  //     expected_output: "",
-  //     timeline_from: "",
-  //     timeline_to: "",
-  //     assigned_person_id: "",
-  //   })
-  //   setEditingTaskId(null)
-  // }
-
-  // // Function to handle deleting a task
-  // const handleDeleteTask = (taskId: string) => {
-  //   const deleteTask = tasks.filter((task) => task.id !== taskId)
-  //   setTasks(deleteTask)
-  //   localStorage.setItem("work_plan_tasks", JSON.stringify(deleteTask))
-  // }
-  // const submitWorkPlan = () => {
-  //   alert("Submitting")
-  // }
+ 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -294,13 +190,7 @@ export default function CreateWorkPlanPage() {
       className="w-full p-0"
     >
 
-      {/* <main className="max-h-screen w-full bg-background py-10">
-        <Wizard
-          title='Work Plan Creation'
-          description='Create a work plan for the beneficiaries'
-        />
-      </main> */}
-
+      
       <div className="w-full mx-auto px-4 pt-0 mt-0 py-0">
         {/* Workplan Details {JSON.stringify(workPlanData)} */}
         <Wizard
@@ -313,12 +203,7 @@ export default function CreateWorkPlanPage() {
           deploymentAreaName={workPlanData.deployment_area_name}
 
         />
-        {/* {beneficiariesData.map((beneficiary) => (
-          <div key={beneficiary.id} className="mb-4">
-            <h2 className="text-lg font-semibold">{beneficiary.first_name} {beneficiary.middle_name} {beneficiary.extension_name} {beneficiary.last_name}</h2>
-            <p>{beneficiary.status}</p>
-          </div>
-        ))} */}
+        
 
 
       </div>

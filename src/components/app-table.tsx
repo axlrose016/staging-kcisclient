@@ -104,7 +104,8 @@ interface DataTableProps {
   simpleView?: boolean;
   initialFilters?: Filter[];
   onFilterChange?: (filters: Filter[]) => void;
-
+  onUseFields?: (columns: any[]) => any[];
+  columnProps?: Record<string, any>;
 }
 
 interface Filter {
@@ -112,8 +113,8 @@ interface Filter {
   value: string;
 }
 
-const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
-const DEFAULT_PAGE_SIZE = 10;
+const PAGE_SIZE_OPTIONS = [15, 25, 50, 100];
+const DEFAULT_PAGE_SIZE = 15;
 
 type ViewMode = 'table' | 'grid';
 
@@ -158,6 +159,8 @@ export function AppTable({
   simpleView = false,
   initialFilters = [],
   onFilterChange,
+  onUseFields,
+  columnProps
 }: DataTableProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -241,9 +244,17 @@ export function AppTable({
       dataType: typeof sampleRow[key] === 'number' ? 'number' : 'text',
       filterType: typeof sampleRow[key] === 'boolean' ? 'select' : 'text',
       filterOptions: typeof sampleRow[key] === 'boolean' ? ['true', 'false'] : undefined,
-      sortable: true
+      sortable: true,
+      filterable: true
     }));
   }, [data, providedColumns]);
+
+  const formColumns = useMemo(() => {
+    if (onUseFields) {
+      return onUseFields(columns);
+    }
+    return columns;
+  }, [columns, onUseFields]);
 
   useEffect(() => {
     setLoading(true)
@@ -413,11 +424,21 @@ export function AppTable({
     const visibleColumns = columns.filter(col => columnVisibility[col.id] !== false);
     const headers = visibleColumns.map(col => col.header).join(',');
     const rows = data.map(row =>
-      visibleColumns.map(col => `"${row[col.accessorKey]}"`).join(',')
+      visibleColumns.map(col => {
+        let value = row[col.accessorKey];
+
+        // Remove ₱ and commas if the accessorKey contains "amount"
+        if (col.accessorKey.toLowerCase().includes('amount')) {
+          value = value?.toString().replace(/[₱,]/g, '').trim();
+        }
+
+        return `"${value}"`;
+      }).join(',')
     ).join('\n');
     const csv = `${headers}\n${rows}`;
+    const csvWithBOM = '\uFEFF' + csv; // Add BOM for Excel compatibility
 
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob([csvWithBOM], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
     link.setAttribute('download', 'table-data.csv');
@@ -1093,7 +1114,7 @@ export function AppTable({
                   <SelectValue placeholder="Select column" />
                 </SelectTrigger>
                 <SelectContent>
-                  {columns.map((column) => (
+                  {columns.filter(f => f.filterType !== null).map((column) => (
                     <SelectItem key={column.id} value={column.id}>
                       {column.header}
                     </SelectItem>
@@ -1146,10 +1167,11 @@ export function AppTable({
             <DialogTitle>{editingRow ? 'Edit Record' : 'Add New Record'}</DialogTitle>
           </DialogHeader>
           <AppTableDialogForm
-            columns={columns}
+            columns={formColumns}
             initialData={editingRow}
             onSubmit={handleSubmitNewRecord}
             onCancel={() => setShowAddDialog(false)}
+            columnProps={columnProps}
           />
         </DialogContent>
       </Dialog>

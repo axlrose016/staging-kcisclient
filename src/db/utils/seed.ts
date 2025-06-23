@@ -26,7 +26,7 @@ export async function seed(db: any) {
             },
             {
                 "id": "37544f59-f3ba-45df-ae0b-c8fa4e4ce446",
-                "role_description": "CFW",
+                "role_description": "CFW Beneficiary",
                 "created_by": "00000000-0000-0000-0000-000000000000"
             }
         ]

@@ -8,7 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
 import { FolderInput, PlusCircle } from 'lucide-react';
-import { FinanceService } from '../../FinanceService';
+import { FinanceService } from '../../../../../components/services/FinanceService';
+import { PushStatusBadge } from '@/components/general/push-status-badge';
 
 function MOPMasterlist() {
     const [data, setData] = React.useState([]);
@@ -52,6 +53,16 @@ function MOPMasterlist() {
 
    const columnsMasterlist = [
       {
+          id: 'push status id',
+          header: 'Uploading Status',
+          accessorKey: 'push_status_id',
+          filterType: 'select',
+          filterOptions: ['Unknown', 'Uploaded', 'For Upload'],
+          sortable: true,
+          align: "center",
+          cell: (value: any) =>  <PushStatusBadge push_status_id={value} size="md" />
+      },
+      {
           id: 'region',
           header: 'Region',
           accessorKey: 'region_code',
@@ -61,9 +72,9 @@ function MOPMasterlist() {
           cell: null,
       },
       {
-          id: 'pap descriotion',
-          header: 'PAP',
-          accessorKey: 'pap_description',
+          id: 'modality name',
+          header: 'Modality',
+          accessorKey: 'modality_name',
           filterType: 'text',
           sortable: true,
           align: "left",
