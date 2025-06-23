@@ -56,7 +56,7 @@ export default function FormEmploymentStatus() {
 
 
   useEffect(() => {
-    debugger;
+    
     async function fetchRecord() {
       if (id) {
         const fetchedRecord = await libService.getOfflineLibEmploymentStatusById(id) as ILibEmploymentStatus;

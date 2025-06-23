@@ -232,7 +232,7 @@ export default function PersonProfileForm() {
     const securedData = {
       ...data,
     }
-    debugger;
+    
     UsersService.saveUser(securedData).then((response:any) => {
       if(response){
         router.push('/login');

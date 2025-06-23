@@ -58,7 +58,7 @@ export default function ContactDetails({ errors, capturedData, updateCapturedDat
 
 
     const updatingContactDetails = (field: any, value: any) => {
-        // debugger;
+        // 
         console.log("The valus is ", value);
         console.log(isSameAddress);
         if (isSameAddress) {
@@ -126,7 +126,7 @@ export default function ContactDetails({ errors, capturedData, updateCapturedDat
 
     const [isSameAddress, setIsSameAddress] = useState(false);
     const handleCheckSameAddress = () => {
-        // debugger;
+        // 
         console.log(!isSameAddress);
         setIsSameAddress(!isSameAddress);
         capturedData.is_permanent_same_as_current_address = !isSameAddress;

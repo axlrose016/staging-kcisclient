@@ -33,7 +33,7 @@ export default function FormModule() {
   const id = typeof params?.id === 'string' ? params.id : '';
 
   useEffect(() => {
-    debugger;
+    
     async function fetchRecord() {
       if (id) {
         const fetchedRecord = await libService.getOfflineModuleById(id) as IModules;

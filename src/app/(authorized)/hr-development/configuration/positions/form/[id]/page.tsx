@@ -56,7 +56,7 @@ export default function FormPositionItem() {
 
 
   useEffect(() => {
-    debugger;
+    
     async function fetchRecord() {
       if (id) {
         const fetchedRecord = await libService.getOfflineLibPositionById(id) as ILibPosition;

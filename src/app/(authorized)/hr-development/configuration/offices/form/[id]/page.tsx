@@ -56,7 +56,7 @@ export default function FormOffice() {
 
 
   useEffect(() => {
-    debugger;
+    
     async function fetchRecord() {
       if (id) {
         const fetchedRecord = await libService.getOfflineLibOfficeById(id) as ILibOffice;

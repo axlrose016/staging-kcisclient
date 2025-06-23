@@ -74,7 +74,7 @@ export default function Attachments({
     fetchAttachments();
   }, []);
   const fetchAttachments = async () => {
-    // debugger;
+    // 
     if (!dexieDb.isOpen()) await dexieDb.open(); // Ensure DB is open
 
     try {
@@ -95,11 +95,12 @@ export default function Attachments({
           ext.name,
         ])
       );
+      debugger;
       setAttachmentNames(attachment_map);
       updateFormData(allAttachments);
       setAttachments(allAttachments);
       setListOfAttachmentsData(files_to_upload);
-      // debugger;
+      // 
       if (!iflag) {
         console.log("✅ Attachments fetched:", filteredRecords);
         iflag = true;
@@ -239,7 +240,7 @@ export default function Attachments({
 
   // readonly when admin viewing
   useEffect(() => {
-    debugger;
+    
     if (userIdViewing) {
       const form = document.getElementById("attachments");
       if (form) {
@@ -293,9 +294,9 @@ export default function Attachments({
     // setSelectedFilePathUrl(URL.createObjectURL("https://kcnfms.dswd.gov.ph/media/blobs/" + file_name))
 
     // setSelectedNameOfFile(file_name);
-    // debugger;
+    // 
     // if (file_id) {
-    //     // debugger;
+    //     // 
     //     const foundAttachment = listOfAttachmentsData.find((attachment) => attachment.id === file_id);
     //     if (foundAttachment) {
     //         setSelectedNameOfFile(foundAttachment.name);
@@ -368,7 +369,7 @@ export default function Attachments({
                     );
 
                 const dedupedMap = new Map<string, (typeof source)[number]>();
-
+                    
                 
                 for (const item of source) {
                   if (Number(item.file_id) === 13) continue;

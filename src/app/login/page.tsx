@@ -157,7 +157,7 @@ export default function LoginPage() {
   // }, [successMessage]);
   useEffect(() => {
     localStorage.removeItem("userIdViewOnly")
-    localStorage.removeItem("person_profile")
+    // localStorage.removeItem("person_profile")
     console.log("API: ", process.env.NEXT_PUBLIC_API_BASE_URL_KCIS)
 
     seedData();
@@ -284,7 +284,7 @@ export default function LoginPage() {
       if (isOnline) {
         const onlinePayload = await LoginService.onlineLogin(data.email, data.password);
 
-        debugger;
+        
         if (onlinePayload) {
           const raw = await LoginService.getProfile(onlinePayload.user.id, onlinePayload.token);
           const onlineProfile = await LoginService.getProfile(raw.id, onlinePayload.token);
@@ -307,7 +307,7 @@ export default function LoginPage() {
             await dexieDb.person_profile_family_composition.bulkPut(onlineProfile.person_profile_family_composition)
             await dexieDb.person_profile_cfw_fam_program_details.bulkPut(onlineProfile.person_profile_cfw_fam_program_details)
             await dexieDb.person_profile_disability.bulkPut(onlineProfile.person_profile_disability)
-
+            debugger;
             for (let index = 0; index < (onlineProfile.attachments as []).length; index++) {
               const element = onlineProfile.attachments[index];
               if (element._id) {

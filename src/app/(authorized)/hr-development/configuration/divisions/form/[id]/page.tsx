@@ -56,7 +56,7 @@ export default function FormDivision() {
 
 
   useEffect(() => {
-    debugger;
+    
     async function fetchRecord() {
       if (id) {
         const fetchedRecord = await libService.getOfflineLibDivisionById(id) as ILibDivision;

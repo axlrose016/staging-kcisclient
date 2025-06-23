@@ -89,7 +89,7 @@ export default function SectorDetails({ errors, capturedData, updateCapturedData
     }
 
     const handleDisabilitiesChange = (updatedDisabilities: string[]) => {
-        // debugger;
+        // 
         setSelectedDisabilities(updatedDisabilities); // Update state directly
         const dis = localStorage.getItem("disabilities");
         (dis !== null) ? localStorage.removeItem("disabilities") : "";
@@ -236,7 +236,7 @@ export default function SectorDetails({ errors, capturedData, updateCapturedData
                 // setDisabilityOptions(type_of_disability);
 
 
-                // debugger;
+                // 
                 const sectors = await getSectorsLibraryOptions();
                 setSectorOptions(sectors);
 
@@ -257,7 +257,7 @@ export default function SectorDetails({ errors, capturedData, updateCapturedData
                 setStoredSect(sectorsFromLS ? JSON.parse(sectorsFromLS) : []);
                 console.log("SS to ", sectorsFromLS);
 
-                // debugger;
+                // 
                 const storedDisabs = localStorage.getItem("disabilities");
                 if (storedDisabs !== null) {
                     setSelectedDisabilities(JSON.parse(storedDisabs));
@@ -266,7 +266,7 @@ export default function SectorDetails({ errors, capturedData, updateCapturedData
                 const ip_groups = await getIPGroupLibraryOptions();
                 setIpGroupsOptions(ip_groups);
 
-                // debugger;
+                // 
                 const ip_group_id = localStorage.getItem("ip_group_id");
                 if (ip_group_id) {
                     const ipgid = Number(ip_group_id);

@@ -215,7 +215,7 @@ export default function PersonProfileForm_({ user_id_viewing }: any) {
     action: string,
     id: any
   ) => {
-    debugger;
+    
     console.log("The action is ", action);
     if (action == "new") {
       setFormFamilyCompositionData(newData);
@@ -388,9 +388,9 @@ export default function PersonProfileForm_({ user_id_viewing }: any) {
     // updateCommonData("sex_id", id);
     console.log("Selected Sex ID:", id);
     setSelectedSexId(id);
-    debugger;
+    
     if (id == 2) {
-      debugger;
+      
       // male
       // remove selection if there is the woman sector
       const lsSelectedSectors = localStorage.getItem("person_sectors");
@@ -810,7 +810,7 @@ export default function PersonProfileForm_({ user_id_viewing }: any) {
     // });
     const sendEmailConfirmation = async (endpoint: string) => {
       try {
-        debugger;
+        
         const onlinePayload = await LoginService.onlineLogin(
           "dsentico@dswd.gov.ph",
           "Dswd@123"
@@ -849,7 +849,7 @@ export default function PersonProfileForm_({ user_id_viewing }: any) {
         // cc:jmgarbo@dswd.gov.ph,
         // cc:argvillanueva@dswd.gov.ph,
 
-        debugger;
+        
         if (!response.ok) {
           console.log(response);
         } else {
@@ -1104,7 +1104,7 @@ export default function PersonProfileForm_({ user_id_viewing }: any) {
               };
             });
 
-            debugger;
+            
             formPersonProfileFamilyComposition = Object.values(
               formFamilyCompositionData
             ).map((fcd) => {
@@ -1197,7 +1197,7 @@ export default function PersonProfileForm_({ user_id_viewing }: any) {
             // }
           }
 
-          debugger;
+          
           dexieDb.open();
           dexieDb
             .transaction(
@@ -1234,7 +1234,7 @@ export default function PersonProfileForm_({ user_id_viewing }: any) {
                   // localStorage.removeItem("family_composition");
                   // localStorage.removeItem("person_cfw_program_details");
                   // localStorage.removeItem("person_disabilities");
-                  debugger;
+                  
 
                   const response = await PersonProfileService.syncBulkData(
                     formPersonProfile
@@ -1795,7 +1795,7 @@ export default function PersonProfileForm_({ user_id_viewing }: any) {
 
         //   appendData("disabilities", formattedDisabilities);
         // }
-        debugger;
+        
         if (formData?.is_pwd) {
           if (
             !Array.isArray(formDisabilitiesData) ||
@@ -1835,7 +1835,7 @@ export default function PersonProfileForm_({ user_id_viewing }: any) {
           appendData("ip_group_id", storedIPGroupId);
         }
 
-        debugger;
+        
         // family composition
 
         const lsFCom = localStorage.getItem("family_composition");
@@ -2306,7 +2306,7 @@ export default function PersonProfileForm_({ user_id_viewing }: any) {
               console.error("Fetch error:", err);
             }
 
-            debugger;
+            
             // email the assessment
             if (parsedlsAssessment.status_id == 1) {
               //meaning eligible
@@ -2489,7 +2489,7 @@ export default function PersonProfileForm_({ user_id_viewing }: any) {
 
   // fetch data
   useEffect(() => {
-    debugger;
+    
     const fetchData = async () => {
       try {
         const files_upload = await getOfflineLibFilesToUpload();
@@ -2532,7 +2532,7 @@ export default function PersonProfileForm_({ user_id_viewing }: any) {
           .and((record) => record.user_id === _session.id) // Add criteria for user_id
           .first();
         // alert(_session.id)
-        debugger;
+        
         // alert("Is Existing " + JSON.stringify(existingRecord))
         if (existingRecord?.file_path instanceof Blob) {
           // Unsynced: local file as Blob
@@ -2559,7 +2559,7 @@ export default function PersonProfileForm_({ user_id_viewing }: any) {
           setHasProfilePicture(false);
         }
 
-        debugger;
+        
         await Promise.all(
           files_upload.map(async (file) => {
             const fid = file.id;
@@ -2700,7 +2700,7 @@ export default function PersonProfileForm_({ user_id_viewing }: any) {
   //           if (searchByUserId != null || searchByUserId != undefined) {
   //             // Fetch Profile (Dexie first, then LocalStorage)
   //             // alert("search id is : " + searchByUserId);
-  //             debugger;
+  //             
   //             let profile: IPersonProfile | null = null;
   //             if (userIdViewing) {
   //               // setUserIdViewing(userIdViewing);
@@ -2800,7 +2800,7 @@ export default function PersonProfileForm_({ user_id_viewing }: any) {
   //             console.log("The type of family  is ", typeof family);
 
   //             // const userFamily = family.filter((member) => member.person_profile_id === profile?.id);
-  //             debugger;
+  //             
   //             const userFamily = family.filter(
   //               (member) => member.person_profile_id === profile?.id
   //             );
@@ -3013,7 +3013,7 @@ export default function PersonProfileForm_({ user_id_viewing }: any) {
   }, [formData]);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    debugger;
+    
     const file = e.target.files?.[0]; // Get the selected file
     if (!file) return;
     try {

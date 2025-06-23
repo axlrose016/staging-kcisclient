@@ -57,7 +57,7 @@ export default function FormFundSource() {
   })
 
   useEffect(() => {
-    debugger;
+    
     async function fetchRecord() {
       if (id) {
         const fetchedRecord = await libService.getOfflineLibFundSourceById(id) as ILibFundSource;

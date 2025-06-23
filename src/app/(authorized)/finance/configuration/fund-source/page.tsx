@@ -19,7 +19,7 @@ function ListFundSources() {
     async function loadFundSources(){
         try{
             const data = await libService.getOfflineLibFundSource() as any;
-            debugger;
+            
             setData(data);
         }catch(error){
             console.error(error);

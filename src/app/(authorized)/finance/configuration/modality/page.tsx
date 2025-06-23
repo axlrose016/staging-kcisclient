@@ -19,7 +19,7 @@ function ListModalities() {
     async function loadModalities(){
         try{
             const data = await libService.getOfflineLibModality() as any;
-            debugger;
+            
             setData(data);
         }catch(error){
             console.error(error);

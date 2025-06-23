@@ -55,7 +55,7 @@ export default function person_profile() {
 
     //                 const signal = newAbortSignal(5000);
     //                 try {
-    //                     debugger;
+    //                     
     //                     const onlinePayload = await LoginService.onlineLogin("dsentico@dswd.gov.ph", "Dswd@123");
     //                     const response = await fetch(endpoint, {
 
@@ -70,7 +70,7 @@ export default function person_profile() {
     //                         console.log("Person profile > view > error ", response);
 
     //                     } else {
-    //                         debugger;
+    //                         
     //                         const data = await response.json();
     //                         console.log("Person profile > view > success ", data)
     //                         setProfiles(data);

@@ -56,7 +56,7 @@ export default function FormAllotmentClass() {
 
 
   useEffect(() => {
-    debugger;
+    
     async function fetchRecord() {
       if (id) {
         const fetchedRecord = await libService.getOfflineLibAllotmentClassById(id) as ILibAllotmentClass;

@@ -326,7 +326,7 @@ export class FinanceService {
                 };
 
                 let data: IAllocation = allocation;
-                debugger;
+                
                 if(allocation.id === ""){
                     data = {
                         ...allocation,
@@ -425,7 +425,7 @@ export class FinanceService {
     //MOP
     async getOfflineMOPByUACSId(id: any): Promise<IMonthlyObligationPlan | undefined>{
         try{
-            debugger;
+            
             const result = await financeDb.transaction('r', [financeDb.monthly_obligation_plan], async () => {
                 const mop = await financeDb.monthly_obligation_plan.where('allocation_uacs_id').equals(id).first();
                 if(mop){

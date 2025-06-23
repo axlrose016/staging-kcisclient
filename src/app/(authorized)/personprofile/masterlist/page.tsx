@@ -185,7 +185,7 @@ export default function PersonProfileMasterlist({ page }: { page: number }) {
 
                     const signal = newAbortSignal(5000);
                     try {
-                        debugger;
+                        
                         const onlinePayload = await LoginService.onlineLogin("dsentico@dswd.gov.ph", "Dswd@123");
 
                         const response = await fetch(endpoint, {
@@ -278,7 +278,7 @@ export default function PersonProfileMasterlist({ page }: { page: number }) {
             const fetchSelectedData = async (endpoint: string) => {
                 const signal = newAbortSignal(5000);
                 try {
-                    debugger;
+                    
                     const onlinePayload = await LoginService.onlineLogin("dsentico@dswd.gov.ph", "Dswd@123");
                     const response = await fetch(endpoint, {
 
@@ -298,7 +298,7 @@ export default function PersonProfileMasterlist({ page }: { page: number }) {
                             const parsedUserIdViewOnly = JSON.parse(lsUserIdViewOnly);
                         }
                         localStorage.setItem("userIdViewOnly", JSON.stringify(row.id));
-                        debugger;
+                        
                         const data = await response.json();
                         localStorage.setItem("personProfileFromAPI", JSON.stringify(data));
                         console.log("Person profile > view > success ", data)

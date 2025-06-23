@@ -29,7 +29,7 @@ export function useFetchAndSyncProfile(userId: string): UseProfileData {
     useEffect(() => {
         const fetchAndSync = async () => {
             try {
-                debugger;
+                
                 setLoading(true);
                 setError(null);
                 const urlFetchData = process.env.NEXT_PUBLIC_API_BASE_URL_KCIS + "person_profile/view/" + userId + "/";

@@ -114,7 +114,7 @@ export default function PrefferedDeploymentArea({ errors, capturedData, updateFo
                     }
                 }
 
-                debugger;
+                
                 // create an admin localstorage that will be used for assessment and eligibility, assigned deployment area, 
                 const lsAssignedDeploymentArea = localStorage.getItem("assigned_deployment_area");
                 if (!lsAssignedDeploymentArea) {
@@ -141,7 +141,7 @@ export default function PrefferedDeploymentArea({ errors, capturedData, updateFo
 
 
 
-                // debugger;
+                // 
                 try {
 
 
@@ -222,7 +222,7 @@ export default function PrefferedDeploymentArea({ errors, capturedData, updateFo
 
     }
     const updateAssignedDeploymentAreaCategoryId = (deploymentAreaCategoryId: number) => {
-        debugger;
+        
         setSelectedDeploymentAreaId(0);
         console.log(selectedDeploymentAreaId)
         const storedData = localStorage.getItem("assigned_deployment_area");
@@ -300,7 +300,7 @@ export default function PrefferedDeploymentArea({ errors, capturedData, updateFo
                         id="assigned_deployment_area_category_id"
                         name="assigned_deployment_area_category_id"
                         options={deploymentAreaCategoriesOptions}
-                        selectedOption={selectedAssignedDeploymentAreaCategoryId ?? null}
+                        selectedOption={selectedAssignedDeploymentAreaCategoryId ?? ""}
                         onChange={(id) => updateAssignedDeploymentAreaCategoryId(id)}
                     // selectedOption={Number(capturedData.assigned_deployment_area_id) || 0}
                     // onChange={(value) => updateFormData({ assigned_deployment_area_id: value.target.value })}

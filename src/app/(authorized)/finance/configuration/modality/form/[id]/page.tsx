@@ -59,7 +59,7 @@ export default function FormModality() {
   })
 
   useEffect(() => {
-    debugger;
+    
     async function fetchRecord() {
       if (id) {
         const fetchedRecord = await libService.getOfflineLibModalityById(id) as ILibModality;

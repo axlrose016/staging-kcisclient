@@ -122,7 +122,7 @@ try {
         }
 
         // setProfile(personProfile[0]);
-        //debugger;
+        //
 
 
 
@@ -226,7 +226,7 @@ if (data?.status) {
             id: item.code,
             name: item.name
         }));
-        debugger;
+        
     //console.log("Filtered Brgy:", filteredBrgys);
 
     // ✅ Update state with filtered regions

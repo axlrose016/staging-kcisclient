@@ -370,15 +370,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       //const session = (await response.json()) as SessionPayload;
       console.log("SideBar Session: ", _session);
       if (_session != null) {
-        // debugger;
+        // 
         user.email = _session.userData.email!;
         user.name = _session.userData.name!;
         user.role = _session.userData.role!;
         user.level = _session.userData.level!;
         const userTeams = _session.userData;
-        // debugger;
+        // 
         setUserTeam(userTeams);
-        // debugger;
+        // 
         const navTeam = data.teams.filter((team) =>
           userTeams?.userAccess?.some((mod) => mod.module === team.name)
         );

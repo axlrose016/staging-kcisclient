@@ -50,7 +50,7 @@ export default function UserAccessPage() {
   }, [])
 
   useEffect(() => {
-    debugger;
+    
     async function fetchRecord() {
       if (userId) {
         const fetchedRecord = await userService.getOfflineUserAccessById(userId) as IUserAccess;

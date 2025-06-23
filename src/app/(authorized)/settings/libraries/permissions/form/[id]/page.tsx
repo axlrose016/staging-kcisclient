@@ -39,7 +39,7 @@ export default function FormPermission() {
   const id = typeof params?.id === 'string' ? params.id : '';
 
   useEffect(() => {
-    debugger;
+    
     async function fetchRecord() {
       if (id) {
         const fetchedRecord = await libService.getOfflinePermissionById(id) as IPermissions;

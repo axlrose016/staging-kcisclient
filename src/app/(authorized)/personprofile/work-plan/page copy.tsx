@@ -186,7 +186,7 @@ export default function WorkPlanMasterList({ page }: { page: number }) {
 
                     const signal = newAbortSignal(5000);
                     try {
-                        debugger;
+                        
                         const onlinePayload = await LoginService.onlineLogin("dsentico@dswd.gov.ph", "Dswd@123");
 
                         const response = await fetch(endpoint, {
@@ -204,7 +204,7 @@ export default function WorkPlanMasterList({ page }: { page: number }) {
                         if (!response.ok) {
                             console.log(response);
                         } else {
-                            debugger;
+                            
                             const data = await response.json();
 
                             console.log("🗣️Work Plan from API ", data?.data);
@@ -285,7 +285,7 @@ export default function WorkPlanMasterList({ page }: { page: number }) {
         //     const fetchSelectedData = async (endpoint: string) => {
         //         const signal = newAbortSignal(5000);
         //         try {
-        //             debugger;
+        //             
         //             const onlinePayload = await LoginService.onlineLogin("dsentico@dswd.gov.ph", "Dswd@123");
         //             const response = await fetch(endpoint, {
 
@@ -305,7 +305,7 @@ export default function WorkPlanMasterList({ page }: { page: number }) {
         //                     const parsedUserIdViewOnly = JSON.parse(lsUserIdViewOnly);
         //                 }
         //                 localStorage.setItem("userIdViewOnly", JSON.stringify(row.id));
-        //                 debugger;
+        //                 
         //                 const data = await response.json();
         //                 console.log("Person profile > view > success ", data)
         //                 setSelectedWorkPlan(data);

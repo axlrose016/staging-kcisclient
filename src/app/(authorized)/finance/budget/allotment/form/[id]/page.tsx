@@ -94,7 +94,7 @@ function FormAllotment() {
         try{
             const fetchedRecord = await financeService.getOfflineAllotmentById(_id) as IAllotment;
             if(fetchedRecord !== undefined){
-                debugger;
+                
                 if(fetchedRecord.id !== id){
                     fetchedRecord.allocation_uacs_id = uacsId ?? "";
                     fetchedRecord.id = "";
@@ -230,7 +230,7 @@ function FormAllotment() {
         ];
 
     const handleOnSelectUacs = async (row: any) => {
-        debugger;
+        
         if(id != "0" && id != undefined){
             const uacs = await financeService.getOfflineAllocationUacsById(row.uacs_id) as IAllocationUacs;
             if(!uacs){return;}

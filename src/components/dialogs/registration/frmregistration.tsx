@@ -146,7 +146,7 @@ export default function RegistrationForm({ className, ...props }: React.Componen
     //TRY TO SYNC 
     if (isOnline) {
       await UsersService.syncUserData(formUser, Array(formUserAccess));
-      debugger;
+      
     }
 
 

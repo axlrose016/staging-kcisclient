@@ -258,7 +258,7 @@ export function AccomplishmentUser({
                     file_name: file.name,
                     file_type: file.type,
                     file_path: fileBlob,
-                    file_id: 100,
+                    file_id: file,
                     module_path: module_path,
                     user_id: session!.id,
                     created_date: new Date().toISOString(),

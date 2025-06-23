@@ -131,7 +131,7 @@ export default function SectorDetailsOld({
   };
 
   const handleSectorChange = (sectorId: number, isSelected: boolean): void => {
-    debugger;
+    
     console.log(`${isSelected ? "Adding" : "Removing"} sector id:`, sectorId);
 
     const currentData: Partial<IPersonProfileSector>[] = Array.isArray(
@@ -249,7 +249,7 @@ export default function SectorDetailsOld({
   useEffect(() => {
     const fetchData = async () => {
       try {
-        debugger;
+        
         const sectors = await getOfflineLibSectorsLibraryOptions(); //await getSectorsLibraryOptions();
 
         if (capturedData.sex_id == 2) {
@@ -333,7 +333,7 @@ export default function SectorDetailsOld({
         // setDisabilityOptions(type_of_disability);
         // updateSelectedDisabilities()
 
-        // debugger;
+        // 
         // const storedDisabs = localStorage.getItem("disabilities");
         // if (storedDisabs !== null) {
         //     setSelectedDisabilities(JSON.parse(storedDisabs));
@@ -343,7 +343,7 @@ export default function SectorDetailsOld({
         const ip_groups = await getOfflineLibIPGroup();
         setIpGroupsOptions(ip_groups);
 
-        debugger;
+        
         const ip_group_id = localStorage.getItem("ipgroup_id") || "0";
         localStorage.setItem("ipgroup_id", ip_group_id);
 
@@ -394,7 +394,7 @@ export default function SectorDetailsOld({
   }, [userIdViewing]);
 
   // useEffect(() => {
-  //     debugger;
+  //     
   //     const lsSec = localStorage.getItem("person_sectors")
   //     let isPWD = false;
   //     if (lsSec) {
@@ -412,7 +412,7 @@ export default function SectorDetailsOld({
   //     }
   // }, [showListOfDisabilities]);
   // useEffect(() => {
-  //     debugger;
+  //     
   //     const lsIP = localStorage.getItem("ipgroup_id")
   //     let hasIpgroup = false;
   //     if (lsIP == "1") {
@@ -453,7 +453,7 @@ export default function SectorDetailsOld({
   };
   const handleSectorRadioGroupChange = (e: any) => {
     console.log("Sector responses❤️:", e);
-    debugger;   
+       
     localStorage.setItem("person_sectors", JSON.stringify(e));
     const isPWDSector = e.find(
       (sector: any) =>

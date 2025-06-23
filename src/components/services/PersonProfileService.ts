@@ -268,7 +268,7 @@ class PersonProfileService {
     }
   }
   async syncBulkCFWAssessment(): Promise<{ success: number; failed: number }> {
-    debugger;
+    
     const unsyncedData = await dexieDb.cfwassessment
       .where("push_status_id")
       .equals(2)

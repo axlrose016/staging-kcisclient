@@ -74,7 +74,7 @@ export default function FormPositionItem() {
   }, [])
 
   useEffect(() => {
-    debugger;
+    
     async function fetchRecord() {
       if (id) {
         const fetchedRecord = await hrService.getOfflinePositionItemById(id) as IPositionItem;
@@ -109,7 +109,7 @@ export default function FormPositionItem() {
     }
 
     console.log("Form submitted:", data)
-    debugger;
+    
     // Here you would typically send the data to your API
     hrService.saveOfflinePositionItem(data).then((response:any) => {
       if (response) {

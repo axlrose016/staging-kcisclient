@@ -47,7 +47,7 @@ export default function Assessment() {
     }, []);
 
     const updateAssessment = (field: string, value: string) => {
-        debugger;
+        
         // setAssessment(e);
 
         const lsAssessment = localStorage.getItem("assessment");

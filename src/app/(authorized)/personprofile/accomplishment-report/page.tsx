@@ -119,7 +119,7 @@ export default function AccomplishmentReport() {
 
     useEffect(() => {
         console.log('DTR: session', _session)
-        debugger;
+        
         if (["CFW Beneficiary", "Guest"].includes(_session?.userData?.role || "")) {
             router.push(`/${baseUrl}/${_session.id}`);
         } else {

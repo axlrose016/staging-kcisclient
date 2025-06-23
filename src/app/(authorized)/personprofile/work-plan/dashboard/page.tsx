@@ -73,7 +73,7 @@ export default function WorkPlansDashboard() {
         try {
             const fetchData = async (endpoint: string) => {
                 try {
-                    debugger;
+                    
                     const onlinePayload = await LoginService.onlineLogin(
                         "dsentico@dswd.gov.ph",
                         "Dswd@123"
@@ -90,7 +90,7 @@ export default function WorkPlansDashboard() {
                     if (!response.ok) {
                         console.log(response);
                     } else {
-                        debugger;
+                        
                         const data = await response.json();
 
                         const formatted = data.map((item: any) => ({

@@ -131,7 +131,7 @@ export default function AccountPage() {
 
 
                     try {
-                        debugger;
+                        
                         const onlinePayload = await LoginService.onlineLogin("dsentico@dswd.gov.ph", "Dswd@123");
 
                         const response = await fetch(endpoint, {

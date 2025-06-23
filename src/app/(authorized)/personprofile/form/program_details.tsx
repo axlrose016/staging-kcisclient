@@ -31,6 +31,7 @@ import { toast } from "@/hooks/use-toast";
 import { year } from "drizzle-orm/mysql-core";
 import { IPersonProfile, IPersonProfileCfwFamProgramDetails, IPersonProfileFamilyComposition } from "@/components/interfaces/personprofile";
 import { getOfflineExtensionLibraryOptions, getOfflineLibCFWType, getOfflineLibProgramTypes, getOfflineLibYearServed } from "@/components/_dal/offline-options";
+import { decryptJson } from "@/lib/utils";
 
 
 export default function CFWProgramDetails({ errors, capturedData, cfwFamComposition, familyComposition, updateFormData, updateCFWFormData, session, user_id_viewing }: {
@@ -109,7 +110,7 @@ export default function CFWProgramDetails({ errors, capturedData, cfwFamComposit
                 // setCFWTypeOptions(cfw_type);
 
                 // const storedHasProgramDetails = localStorage.getItem("cfwHasProgramDetails");
-                const storedHasProgramDetails = localStorage.getItem("person_profile");
+                const storedHasProgramDetails = decryptJson(localStorage.getItem("person_profile")!);
                 if(storedHasProgramDetails){
                     const parsHPD = JSON.parse(storedHasProgramDetails)
                     setHasProgramDetails(parsHPD);
@@ -135,7 +136,7 @@ export default function CFWProgramDetails({ errors, capturedData, cfwFamComposit
                 setProgramTypeNames(programType_map);
                 setProgramTypesOptions(programTypes)
 
-                debugger;
+                
                 console.log(typeof familyComposition)
                 if (typeof familyComposition === "object" && !Array.isArray(familyComposition)) {
                     familyComposition = Object.values(familyComposition);
@@ -247,7 +248,7 @@ export default function CFWProgramDetails({ errors, capturedData, cfwFamComposit
 
     const handleSaveFamBeneData = (e: React.MouseEvent<HTMLButtonElement>) => {
         e.preventDefault(); // Prevent default button behavior
-        debugger;
+        
         if (!selectedFamilyMember) {
 
             toast({
@@ -310,7 +311,7 @@ export default function CFWProgramDetails({ errors, capturedData, cfwFamComposit
                 // const programArray = Array.isArray(prevData) ? prevData : Object.values(prevData);
                 const lsProgramDetails = localStorage.getItem("programDetails");
                 if (lsProgramDetails) {
-                    debugger;
+                    
                     const parsedProgramDetails = JSON.parse(lsProgramDetails);
                     const matchingPrograms = parsedProgramDetails.filter((program: any) => {
                         return (
@@ -334,7 +335,7 @@ export default function CFWProgramDetails({ errors, capturedData, cfwFamComposit
                         // Append the new data to the array
                         // programArray.push(newRecord);
                         addProgramDetail(newRecord);
-                        debugger;
+                        
                         updateCFWFormData([...cfwFamComposition, newRecord]);
                         localStorage.setItem("person_cfw_program_details", JSON.stringify([...cfwFamComposition, newRecord]));
                         setDialogOpen(false);

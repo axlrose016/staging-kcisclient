@@ -65,7 +65,7 @@ function StartPage() {
   useEffect((() => {
     const fetchData = async () => {
       try {
-        //debugger;
+        //
         await dexieDb.open();
         await dexieDb.transaction('r', [dexieDb.person_profile,
         dexieDb.person_profile_sector, dexieDb.person_profile_disability, dexieDb.person_profile_family_composition,
@@ -74,7 +74,7 @@ function StartPage() {
 
             // Fetch Profile (Dexie first, then LocalStorage)
             let profile: IPersonProfile | null = (await dexieDb.person_profile.where("user_id").equals(session.id).first()) || null;
-            //debugger;
+            //
             if (!profile) {
               profile = JSON.parse(localStorage.getItem("person_profile") || "null");
             }
@@ -125,7 +125,7 @@ function StartPage() {
               }
             }
 
-            // debugger;
+            // 
             const person_attachments = await dexieDb.attachments.where('file_type').notEqual('').and(x => x.record_id == profile?.id).toArray();
             if (person_attachments !== null && person_attachments !== undefined && person_attachments.length > 0) {
               const perc = Math.floor(25 / person_attachments.length);

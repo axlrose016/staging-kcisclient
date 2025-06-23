@@ -48,7 +48,7 @@ export default function FormLibHiringProcedure() {
 
 
   useEffect(() => {
-    debugger;
+    
     async function fetchRecord() {
       if (id) {
         const fetchedRecord = await libService.getOfflineLibHiringProcedureById(id) as ILibHiringProcedure;

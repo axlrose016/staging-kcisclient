@@ -34,7 +34,7 @@ export default function SuccessPage({
     const sendEmailConfirmation = async (endpoint: string) => {
 
       try {
-        debugger;
+        
         const onlinePayload = await LoginService.onlineLogin("dsentico@dswd.gov.ph", "Dswd@123");
 
         const response = await fetch(endpoint, {

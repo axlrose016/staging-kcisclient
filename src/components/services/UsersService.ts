@@ -17,7 +17,7 @@ class UsersService {
     }
     console.log("User payload!", Array(payload));
     try {
-      debugger;
+      
       const response = await axios.post(this.userApi, Array(payload), {
         headers: {
           'Content-Type': 'application/json',

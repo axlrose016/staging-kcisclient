@@ -157,7 +157,7 @@ export default function SignUpGuest() {
     const securedData = {
       ...data,
     }
-    debugger;
+    
     UsersService.saveUser(securedData).then((response:any) => {
       if(response){
         router.push('/login');

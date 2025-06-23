@@ -51,7 +51,7 @@ export default function FormExpense() {
 
 
   useEffect(() => {
-    debugger;
+    
     async function fetchRecord() {
       if (id) {
         const fetchedRecord = await libService.getOfflineLibExpenseById(id) as ILibExpense;

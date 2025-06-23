@@ -50,7 +50,7 @@ export default function ExportImportUI() {
     }
 
     const reader = new FileReader()
-    debugger;
+    
     reader.onload = (e) => {
       try {
         // Store the data for confirmation

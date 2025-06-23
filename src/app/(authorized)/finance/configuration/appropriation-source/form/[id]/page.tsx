@@ -56,7 +56,7 @@ export default function FormAppropriationSource() {
 
 
   useEffect(() => {
-    debugger;
+    
     async function fetchRecord() {
       if (id) {
         const fetchedRecord = await libService.getOfflineLibAppropriationSourceById(id) as ILibAppropriationSource;

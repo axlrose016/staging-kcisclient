@@ -98,7 +98,7 @@ export default function WorkPlanPage() {
 
     async function loadPersonProfile() {
       try {
-        debugger;
+        
         const email = "dsentico@dswd.gov.ph";
         const password = "Dswd@123";
 

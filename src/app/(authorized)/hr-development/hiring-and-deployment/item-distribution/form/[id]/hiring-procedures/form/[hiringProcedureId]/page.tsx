@@ -107,7 +107,7 @@ export default function FormHiringProcedure() {
   }, [id]);
 
   function onSubmit(data: FormValues) {
-    debugger;
+    
     console.log("Form submitted:", data)
     // Here you would typically send the data to your API
     hrService.saveOfflineHiringProcedure(data).then((response:any) => {

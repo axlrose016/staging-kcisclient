@@ -42,7 +42,7 @@ export function deleteSession(): void {
 
 // Function to encrypt the payload (create JWT)
 export async function encrypt(payload: SessionPayload): Promise<string> {
-  //debugger;
+  //
   return new SignJWT(payload)
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()

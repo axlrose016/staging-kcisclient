@@ -99,7 +99,7 @@ export class UserService{
     async getOfflineUserAccessById(id: any): Promise<IUserAccess | undefined> {
         try {
         const result = await dexieDb.transaction('r', [dexieDb.useraccess], async () => {
-          debugger;
+          
             const userAccess = await dexieDb.useraccess.where('id').equals(id).first();
             if (userAccess) {
             return userAccess;

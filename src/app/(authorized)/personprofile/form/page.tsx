@@ -73,6 +73,7 @@ import RoleSelectionComponent from "@/components/forms/role-selection";
 import { IUser } from "@/components/interfaces/iuser";
 import { seedModules } from "@/db/offline/Dexie/schema/library-service";
 import SectorDetailsOld from "./sectors";
+import { decryptJson, encryptJson } from "@/lib/utils";
 // import pdfFonts from "pdfmake/build/vfs_fonts";
 const _session = (await getSession()) as SessionPayload;
 export default function PersonProfileForm({ user_id_viewing }: any) {
@@ -145,7 +146,7 @@ export default function PersonProfileForm({ user_id_viewing }: any) {
       const updatedData = { ...prevData, ...newData };
 
       // Save the updated value to localStorage
-      localStorage.setItem("person_profile", JSON.stringify(updatedData));
+      localStorage.setItem("person_profile", encryptJson(JSON.stringify(updatedData)));
       return updatedData;
     });
   };
@@ -217,11 +218,11 @@ export default function PersonProfileForm({ user_id_viewing }: any) {
     action: string,
     id: any
   ) => {
-    debugger;
+    
     console.log("The action is ", action);
     if (action == "new") {
       setFormFamilyCompositionData(newData);
-      localStorage.setItem("family_composition", JSON.stringify(newData));
+      localStorage.setItem("family_composition", encryptJson(JSON.stringify(newData)));
       // setFormFamilyCompositionData((oldData) => {
       //   const updatedData = [...oldData, ...newData];
       //   localStorage.setItem("family_composition", JSON.stringify(updatedData))
@@ -239,7 +240,7 @@ export default function PersonProfileForm({ user_id_viewing }: any) {
     } else if (action == "delete") {
       setFormFamilyCompositionData((prevData) => {
         const updatedData = prevData.filter((fc) => fc.id !== id);
-        localStorage.setItem("family_composition", JSON.stringify(updatedData));
+        localStorage.setItem("family_composition", encryptJson(JSON.stringify(updatedData)));
 
         return updatedData;
       });
@@ -390,15 +391,15 @@ export default function PersonProfileForm({ user_id_viewing }: any) {
     // updateCommonData("sex_id", id);
     console.log("Selected Sex ID:", id);
     setSelectedSexId(id);
-    debugger;
+    
     if (id == 2) {
-      debugger;
+      
       // male
       // remove selection if there is the woman sector
       const lsSelectedSectors = localStorage.getItem("person_sectors");
       if (lsSelectedSectors) {
         const parsedLsSelectedSectors = JSON.parse(lsSelectedSectors);
-        const lspp = localStorage.getItem("person_profile");
+        const lspp = decryptJson(localStorage.getItem("person_profile")!);
         if (lspp) {
           const parsedPP = JSON.parse(lspp);
 
@@ -812,7 +813,7 @@ export default function PersonProfileForm({ user_id_viewing }: any) {
     // });
     const sendEmailConfirmation = async (endpoint: string) => {
       try {
-        debugger;
+        
         const onlinePayload = await LoginService.onlineLogin(
           "dsentico@dswd.gov.ph",
           "Dswd@123"
@@ -851,7 +852,7 @@ export default function PersonProfileForm({ user_id_viewing }: any) {
         // cc:jmgarbo@dswd.gov.ph,
         // cc:argvillanueva@dswd.gov.ph,
 
-        debugger;
+        
         if (!response.ok) {
           console.log(response);
         } else {
@@ -1106,7 +1107,7 @@ export default function PersonProfileForm({ user_id_viewing }: any) {
               };
             });
 
-            debugger;
+            
             formPersonProfileFamilyComposition = Object.values(
               formFamilyCompositionData
             ).map((fcd) => {
@@ -1199,7 +1200,7 @@ export default function PersonProfileForm({ user_id_viewing }: any) {
             // }
           }
 
-          debugger;
+          
           dexieDb.open();
           dexieDb
             .transaction(
@@ -1236,7 +1237,7 @@ export default function PersonProfileForm({ user_id_viewing }: any) {
                   // localStorage.removeItem("family_composition");
                   // localStorage.removeItem("person_cfw_program_details");
                   // localStorage.removeItem("person_disabilities");
-                  debugger;
+                  
 
                   const response = await PersonProfileService.syncBulkData(
                     formPersonProfile
@@ -1797,7 +1798,7 @@ export default function PersonProfileForm({ user_id_viewing }: any) {
 
         //   appendData("disabilities", formattedDisabilities);
         // }
-        debugger;
+        
         if (formData?.is_pwd) {
           if (
             !Array.isArray(formDisabilitiesData) ||
@@ -1837,10 +1838,10 @@ export default function PersonProfileForm({ user_id_viewing }: any) {
           appendData("ip_group_id", storedIPGroupId);
         }
 
-        debugger;
+        
         // family composition
 
-        const lsFCom = localStorage.getItem("family_composition");
+        const lsFCom = decryptJson(localStorage.getItem("family_composition")!);
         if (lsFCom) {
           const parsedFCom = JSON.parse(lsFCom);
           if (parsedFCom.length > 0) {
@@ -2274,7 +2275,7 @@ export default function PersonProfileForm({ user_id_viewing }: any) {
                 const record = await dexieDb.person_profile.get(userIdViewing);
                 const userId = record?.user_id
                 const email = record?.email
-                const lsPP = localStorage.getItem("person_profile");
+                const lsPP = decryptJson(localStorage.getItem("person_profile")!);
                 if (lsPP) {
                   const parsedPP = JSON.parse(lsPP);
                   console.log("Form data before changing user role", formData)
@@ -2324,7 +2325,7 @@ export default function PersonProfileForm({ user_id_viewing }: any) {
               console.error("Fetch error:", err);
             }
 
-            debugger;
+            
             const record = await dexieDb.person_profile.get(userIdViewing);
             const userId = record?.user_id
             const email = record?.email
@@ -2510,13 +2511,13 @@ export default function PersonProfileForm({ user_id_viewing }: any) {
 
   // fetch data
   useEffect(() => {
-    debugger;
+    
     const fetchData = async () => {
       try {
         const files_upload = await getOfflineLibFilesToUpload();
+        
         console.log("Files to upload: ", files_upload);
 
-        const _session = (await getSession()) as SessionPayload;
         setSession(_session);
 
         const sex = await getOfflineLibSexOptions(); //await getSexLibraryOptions();
@@ -2542,45 +2543,45 @@ export default function PersonProfileForm({ user_id_viewing }: any) {
         setSectorsOptions(sectors);
         console.log("Session: ", _session);
 
-        updateFormData({ modality_id: 25, modality_sub_category_id: 1 });
+        //updateFormData({ modality_id: 25, modality_sub_category_id: 1 });
 
         // ready the list of attachments to be uploaded
-        if (!dexieDb.isOpen()) await dexieDb.open(); // Ensure DB is open
-        // const existingRecords = await dexieDb.attachments.toArray();
-        const existingRecord = await dexieDb.attachments
-          .where("file_id")
-          .equals(13) //profile picture
-          .and((record) => record.user_id === _session.id) // Add criteria for user_id
-          .first();
-        // alert(_session.id)
-        debugger;
-        // alert("Is Existing " + JSON.stringify(existingRecord))
-        if (existingRecord?.file_path instanceof Blob) {
-          // Unsynced: local file as Blob
-          // alert("Blob");
-          const blobUrl = URL.createObjectURL(existingRecord.file_path);
-          console.log("✅ Blob from local file:", blobUrl);
-          setDisplayPic(blobUrl);
-          setHasProfilePicture(true);
-        } else if (typeof existingRecord?.file_path === "string") {
-          // debugger
-          setDisplayPic(
-            "https://kcnfms.dswd.gov.ph" + existingRecord.file_path
-          );
+        // if (!dexieDb.isOpen()) await dexieDb.open(); // Ensure DB is open
+        // // const existingRecords = await dexieDb.attachments.toArray();
+        // const existingRecord = await dexieDb.attachments
+        //   .where("file_id")
+        //   .equals(13) //profile picture
+        //   .and((record) => record.user_id === _session.id) // Add criteria for user_id
+        //   .first();
+        // // alert(_session.id)
+        // 
+        // // alert("Is Existing " + JSON.stringify(existingRecord))
+        // if (existingRecord?.file_path instanceof Blob) {
+        //   // Unsynced: local file as Blob
+        //   // alert("Blob");
+        //   const blobUrl = URL.createObjectURL(existingRecord.file_path);
+        //   console.log("✅ Blob from local file:", blobUrl);
+        //   setDisplayPic(blobUrl);
+        //   setHasProfilePicture(true);
+        // } else if (typeof existingRecord?.file_path === "string") {
+        //   // debugger
+        //   setDisplayPic(
+        //     "https://kcnfms.dswd.gov.ph" + existingRecord.file_path
+        //   );
 
-        } else {
+        // } else {
 
-          // check it in the localStorage
-          const lsAtt = localStorage.getItem("attachments")
-          if (lsAtt) {
-            const parsedLsAtt = JSON.parse(lsAtt)
+        //   // check it in the localStorage
+        //   const lsAtt = localStorage.getItem("attachments")
+        //   if (lsAtt) {
+        //     const parsedLsAtt = JSON.parse(lsAtt)
 
-          }
-          console.warn("🚫 No valid file_path found");
-          setHasProfilePicture(false);
-        }
+        //   }
+        //   console.warn("🚫 No valid file_path found");
+        //   setHasProfilePicture(false);
+        // }
 
-        debugger;
+        // 
         await Promise.all(
           files_upload.map(async (file) => {
             const fid = file.id;
@@ -2589,6 +2590,7 @@ export default function PersonProfileForm({ user_id_viewing }: any) {
               return;
             }
             const attachmentcount = await dexieDb.attachments.toArray();
+            debugger; 
             if (attachmentcount.length === 0) {
               if (!isMounted) {
                 isMounted = true;
@@ -2625,15 +2627,15 @@ export default function PersonProfileForm({ user_id_viewing }: any) {
 
 
 
-        if (!userIdViewing) {
-          localStorage.removeItem("attachments");
-        }
+        // if (!userIdViewing) {
+        //   localStorage.removeItem("attachments");
+        // }
       } catch (error) {
         console.error("Error fetching data:", error);
       }
     };
-
     fetchData();
+    fetchProfileData();
     if (!userIdViewing) {
       // meaning bene ito
       // determine if new inputs
@@ -2659,7 +2661,7 @@ export default function PersonProfileForm({ user_id_viewing }: any) {
           }
 
         } else {
-          const lsPP = localStorage.getItem("person_profile")
+          const lsPP = decryptJson(localStorage.getItem("person_profile")!)
           if (lsPP) {
             const parsedLsPP = JSON.parse(lsPP)
             if (parsedLsPP.first_name) {
@@ -2683,11 +2685,12 @@ export default function PersonProfileForm({ user_id_viewing }: any) {
         setSelectedRoleNew(parseSelRole)
       }
 
-      setHasPhilsysId(
-        localStorage.getItem("person_profile")
-          ? !!JSON.parse(localStorage.getItem("person_profile")!).has_philsys_id
-          : true
-      );
+    const lsPP = localStorage.getItem("person_profile");
+    const decrypted = lsPP ? decryptJson(lsPP) : null;
+
+    setHasPhilsysId(
+      decrypted ? JSON.parse(decrypted)?.has_philsys_id ?? true : true
+    );
     } else {
       // alert("Viewing")
     }
@@ -2721,7 +2724,7 @@ export default function PersonProfileForm({ user_id_viewing }: any) {
   //           if (searchByUserId != null || searchByUserId != undefined) {
   //             // Fetch Profile (Dexie first, then LocalStorage)
   //             // alert("search id is : " + searchByUserId);
-  //             debugger;
+  //             
   //             let profile: IPersonProfile | null = null;
   //             if (userIdViewing) {
   //               // setUserIdViewing(userIdViewing);
@@ -2821,7 +2824,7 @@ export default function PersonProfileForm({ user_id_viewing }: any) {
   //             console.log("The type of family  is ", typeof family);
 
   //             // const userFamily = family.filter((member) => member.person_profile_id === profile?.id);
-  //             debugger;
+  //             
   //             const userFamily = family.filter(
   //               (member) => member.person_profile_id === profile?.id
   //             );
@@ -2900,7 +2903,8 @@ export default function PersonProfileForm({ user_id_viewing }: any) {
   // end for optimizing
 
 
-  const fetchData = async () => {
+  const fetchProfileData = async () => {
+    
     try {
       await dexieDb.open();
       await dexieDb.transaction(
@@ -2915,24 +2919,32 @@ export default function PersonProfileForm({ user_id_viewing }: any) {
           dexieDb.cfwassessment,
         ],
         async () => {
-          if (session != null || session != undefined) {
+     if (_session != null) {
             // Fetch Profile (LocalStorage first, then Dexie)
-            let profile: IPersonProfile | null = JSON.parse(
-              localStorage.getItem("person_profile") || "null"
-            );
+            let profile: IPersonProfile | null = null;
+
+            try {
+              const lsPP = localStorage.getItem("person_profile");
+              if (lsPP) {
+                const decrypted = decryptJson(lsPP);
+                profile = JSON.parse(decrypted);
+              }
+            } catch (err) {
+              console.warn("Failed to parse local profile:", err);
+            }
 
             if (!profile) {
               profile =
                 (await dexieDb.person_profile
                   .where("user_id")
-                  .equals(session.id)
+                  .equals(_session.id)
                   .first()) || null;
             }
 
             if (profile) {
               setFormData(profile);
             } else {
-              updateFormData({ civil_status_id: 4, id: uuidv4() }); // Default value
+              updateFormData({ modality_id: 25, modality_sub_category_id: 1, civil_status_id: 4, id: uuidv4() }); // Default value
             }
 
             // Fetch Sectors (LocalStorage first, then Dexie)
@@ -2969,7 +2981,7 @@ export default function PersonProfileForm({ user_id_viewing }: any) {
             // Fetch Family Composition (LocalStorage first, then Dexie)
             let family: Partial<IPersonProfileFamilyComposition>[] =
               JSON.parse(
-                localStorage.getItem("family_composition") || "null"
+                decryptJson(localStorage.getItem("family_composition")!) || "null"
               ) || [];
 
             if (!Array.isArray(family) || family.length === 0) {
@@ -3015,15 +3027,14 @@ export default function PersonProfileForm({ user_id_viewing }: any) {
               const profile_for_assessment =
                 (await dexieDb.cfwassessment
                   .where("user_id")
-                  .equals(session.id)
+                  .equals(_session.id)
                   .first()) || null;
               if (profile_for_assessment) {
                 setAssessmentData(profile_for_assessment);
               }
             }
-          }
-        }
-      );
+      }
+      });
     } catch (error) {
       console.error("Error fetching Person Profile from IndexedDB", error);
     }
@@ -3034,7 +3045,7 @@ export default function PersonProfileForm({ user_id_viewing }: any) {
   }, [formData]);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    debugger;
+    
     const file = e.target.files?.[0]; // Get the selected file
     if (!file) return;
     try {

@@ -528,7 +528,7 @@ export default function Wizard({ title, description, beneficiariesData, workPlan
                         // ),
                     }
                 );
-                debugger;
+                
                 // Save all tasks in parallel using Promise.all
                 // await Promise.all(collectedTasks.map(async (ct) => {
                 //     await fetch(
@@ -720,7 +720,7 @@ export default function Wizard({ title, description, beneficiariesData, workPlan
     // }, [workPlanData]);
 
     useEffect(() => {
-        // debugger;
+        // 
 
         console.log("Work Plan: ", workPlanData);
         console.log("Work Plan type: ", typeof workPlanData);
@@ -1278,7 +1278,7 @@ function BeneficiariesStep({ beneficiariesData }: WizardProps) {
 
 
     useEffect(() => {
-        // debugger;
+        // 
         const lst = localStorage.getItem("selectedBeneficiaries")
         if (lst) {
             const parsedList = JSON.parse(lst);
@@ -1890,7 +1890,7 @@ function TasksStep({ workPlanTasks, noOfTasks }: WizardProps) {
         // const taskId = Date.now().toString()
         const taskToSave = { ...newTask, id: taskId }
         // const { toast } = useToast()
-        // debugger;
+        // 
         const isTaskExist = tasks.some((task) => task.activities_tasks.toLowerCase().trim() === newTask.activities_tasks.toLowerCase().trim() && task.category_id.toLowerCase().trim() === newTask.category_id.toLowerCase().trim())
         if (isTaskExist) {
             toast({
@@ -2196,7 +2196,7 @@ function PreviewStep({ setCurrentStep }: any) {
     // all data that will display is from localstorage
     // for title - deployment area short name - duration - number of days - number of bene
     const workPlanTitle = () => {
-        // debugger;
+        // 
         let title = ""
         const lsDASN = localStorage.getItem("deployment_area_short_name_supervisor")
         if (lsDASN) {

@@ -5,7 +5,7 @@ class LoginService {
 
 
   async getProfile(id: string, token: string): Promise<any> {
-    debugger;
+    
     const url = process.env.NEXT_PUBLIC_API_BASE_URL_KCIS + "person_profile/view/" + id + "/";
     try {
       const response = await axios.get(url, {
@@ -22,7 +22,7 @@ class LoginService {
   } 
 
   async onlineLogin(email:string, password: string): Promise<any> {
-    debugger;
+    
     const creds = {
         email: email, password: password
     }

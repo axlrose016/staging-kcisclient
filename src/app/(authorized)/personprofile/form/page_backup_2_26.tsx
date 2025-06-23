@@ -374,7 +374,7 @@
 //         const civil_status = await getCivilStatusLibraryOptions();
 //         setCivilStatusOptions(civil_status);
 
-//         // debugger;
+//         // 
 //         const modality = await getModalityLibraryOptions();
 //         setModalityOptions(modality);
 
@@ -658,7 +658,7 @@
 
 
 
-//     // debugger;
+//     // 
 //     const formData = localStorage.getItem("formData");
 //     if (formData) {
 //       const parsedData = JSON.parse(formData);  // Parse the JSON string back to an object

@@ -169,7 +169,7 @@ export default function ReviewingWorkPlanPage() {
 
 
                     try {
-                        debugger;
+                        
                         const onlinePayload = await LoginService.onlineLogin("dsentico@dswd.gov.ph", "Dswd@123");
 
                         const response = await fetch(endpoint, {
@@ -448,7 +448,7 @@ export default function ReviewingWorkPlanPage() {
 
 
                         try {
-                            debugger;
+                            
                             const onlinePayload = await LoginService.onlineLogin("dsentico@dswd.gov.ph", "Dswd@123");
 
                             const response = await fetch(endpoint, {

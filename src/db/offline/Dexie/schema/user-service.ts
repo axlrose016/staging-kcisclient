@@ -121,7 +121,7 @@ export async function getUserData(id: string): Promise<IUserData | null> {
             level: userlevel?.level_description,
             userAccess: userDataAccess
         }
-        debugger;
+        
         return userData;
     } catch (error) {
         console.log('Failed to Get User Data:', error);

@@ -121,7 +121,7 @@ export default function FormAttachments({ record_id, module_path }: FormAttachme
   }
 
   const getAttachmentTypeInfo = (type: number) => {
-    debugger;
+    
     return attachmentType.find((t) => t.id === type)!
   }
 
@@ -163,7 +163,7 @@ export default function FormAttachments({ record_id, module_path }: FormAttachme
         fileType: file.type
       }))
       
-      debugger;
+      
 
       setFiles((prev) => [...prev, ...newFiles])
 

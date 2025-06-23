@@ -187,7 +187,7 @@ export default function HighestEducationalAttainment({ errors, capturedData, upd
                     <Label htmlFor="campus" className="block text-sm font-medium">Campus<span className='text-red-500'> *</span></Label>
                     <Input
                         ref={isGraduateRef}
-                        value={capturedData?.campus}
+                        value={capturedData?.campus ?? ""}
                         id="campus"
                         name="campus"
                         type="text"

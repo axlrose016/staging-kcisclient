@@ -47,7 +47,7 @@ function AllotmentMasterlist() {
         const success = await settingsService.deleteData(financeDb, "allotment", row, null);
         if(success){
             await financeService.unAssignUacsAllotment(row.id);
-            debugger;
+            
             toast({
                 variant:"green",
                 title:"Success.",

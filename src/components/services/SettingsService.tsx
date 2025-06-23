@@ -96,7 +96,7 @@ export class SettingsService {
             "Content-Type": "application/json",
         };
 
-        debugger;
+        
         const x = JSON.stringify(cleanArray(unsynchedData));
         const [userResponse] = await Promise.all([
             unsynchedData.length > 0

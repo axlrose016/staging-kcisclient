@@ -100,7 +100,7 @@ export default function CreateWorkPlanPage() {
 
         async function loadPersonProfile() {
             try {
-                debugger;
+                
                 const email = "dsentico@dswd.gov.ph";
                 const password = "Dswd@123";
 
@@ -226,7 +226,7 @@ export default function CreateWorkPlanPage() {
     //   const taskId = Date.now().toString()
     //   const taskToSave = { ...newTask, id: taskId }
     //   // const { toast } = useToast()
-    //   // debugger;
+    //   // 
     //   const isTaskExist = tasks.some((task) => task.activities_tasks.toLowerCase().trim() === newTask.activities_tasks.toLowerCase().trim() && task.category_id.toLowerCase().trim() === newTask.category_id.toLowerCase().trim())
     //   if (isTaskExist) {
     //     toast({

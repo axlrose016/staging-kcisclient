@@ -24,6 +24,7 @@ import { lib_extension_name } from "@/db/schema/libraries";
 import { person_profile } from "@/db/schema/personprofile";
 import { SessionPayload } from '@/types/globals';
 import { getSession } from '@/lib/sessions-client'
+import { decryptJson } from "@/lib/utils";
 const _session = await getSession() as SessionPayload;
 export default function FamilyComposition({ errors, capturedeData, familyCompositionData, updatedFamComposition, session, user_id_viewing }: {
     errors: any; capturedeData: Partial<IPersonProfile>; familyCompositionData: Partial<IPersonProfileFamilyComposition>[];
@@ -121,7 +122,7 @@ export default function FamilyComposition({ errors, capturedeData, familyComposi
 
     useEffect(() => {
         debugger
-        const lsFC = localStorage.getItem("family_composition")
+        const lsFC = decryptJson(localStorage.getItem("family_composition")!)
         if(lsFC){
             const parsedFC = JSON.parse(lsFC)
             setFamilyCompositionData(parsedFC)
@@ -186,8 +187,8 @@ export default function FamilyComposition({ errors, capturedeData, familyComposi
                 }));
                 setRelationshipToFamilyMemberOptions(formattedRelationship);
 
-                debugger;
-                const lsFC = localStorage.getItem("family_composition")
+                
+                const lsFC = decryptJson(localStorage.getItem("family_composition")!)
                 if (lsFC) {
                     const parsedFC = JSON.parse(lsFC)
                     setFamilyCompositionData(parsedFC)
@@ -462,7 +463,7 @@ export default function FamilyComposition({ errors, capturedeData, familyComposi
     // Delete function
 
     const confirmDelete = (index: string) => {
-        debugger;
+        
         if (!familyComposition.family_composition) return; // Ensure it exists
         console.log("😘Family composition typeof ", typeof familyCompositionData)
         const updatedFamily = familyComposition.family_composition.filter((_, i) => i !== Number(index));

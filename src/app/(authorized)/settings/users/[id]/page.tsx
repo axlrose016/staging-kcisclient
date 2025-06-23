@@ -128,11 +128,11 @@ export default function FormModule() {
 
   const handleRowClick = (row: any) => {
       console.log('Row clicked:', row);
-      debugger;
+      
       router.push(`/${baseUrl}/${row.user_id}/useraccess/${row.id}`);
   };
   const handleAddNewRecord = (newRecord: any) => {
-    debugger;
+    
       router.push(`/${baseUrl}/${id}/useraccess/0`)
   }
 

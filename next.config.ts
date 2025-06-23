@@ -36,6 +36,9 @@ const connectSrc = [
   "'self'",
   'https://www.google.com',
   'https://www.gstatic.com',
+  'https://timeapi.io',
+  'https://worldtimeapi.org',
+  'https://api.ipgeolocation.io',
   ...new Set(connectSrcDomains),
 ].join(' ');
 
@@ -70,9 +73,9 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-  experimental: {
-    // turbo: { enabled: true },
-  },
+  // experimental: {
+  //   turbo: true,
+  // },
   cacheHandler: require.resolve('./cache-handler.js'),
   cacheMaxMemorySize: 0,
   eslint: {
